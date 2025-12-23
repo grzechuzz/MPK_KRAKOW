@@ -13,6 +13,13 @@ def parse_gtfs_time_to_seconds(value: str) -> int:
         raise ValueError(f"Invalid GTFS time format: {value!r}")
 
     h_str, m_str, sec_str = parts 
+    
+    if not (h_str.isdigit() and m_str.isdigit() and sec_str.isdigit()):
+        raise ValueError(f"Invalid GTFS time format: {value!r}")
+
+    if len(m_str) != 2 or len(sec_str) != 2:
+        raise ValueError(f"Invalid GTFS time format: {value!r}")
+
     h = int(h_str)
     m = int(m_str)
     sec = int(sec_str)
@@ -21,5 +28,4 @@ def parse_gtfs_time_to_seconds(value: str) -> int:
         raise ValueError(f"Invalid GTFS time value: {value!r}")
 
     return h * 3600 + m * 60 + sec
-
 
