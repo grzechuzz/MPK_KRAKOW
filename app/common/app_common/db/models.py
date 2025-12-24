@@ -1,9 +1,7 @@
 from sqlalchemy import BigInteger, SmallInteger, Identity, Text, Boolean, Integer, func
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import date, datetime
-
-from .base import Base 
-
+from .base import Base
 
 
 class GtfsMeta(Base):
@@ -12,7 +10,6 @@ class GtfsMeta(Base):
     id: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
     current_hash: Mapped[str] = mapped_column(Text, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(nullable=False, server_default=func.now())
-
 
 
 class StopEvent(Base):
