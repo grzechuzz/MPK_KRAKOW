@@ -2,6 +2,7 @@ import shutil
 from pathlib import Path
 
 from app.common.app_common.gtfs.hashing import sha256_file
+from app.common.app_common.db.session import engine
 from app.importer.importer.download import download_gtfs_zip
 from app.importer.importer.archive import archive_zip_by_hash
 from app.importer.importer.extract import extract_gtfs_zip
@@ -49,8 +50,15 @@ def run() -> int:
     # 5. extract + load
     extract_root, base_dir = extract_gtfs_zip(archived_zip)
     try:
-        load_static_gtfs(base_dir)
-        set_current_static_hash(zip_hash)
+        with engine.begin() as conn:
+            current_hash = get_current_static_hash(conn)
+            if current_hash == zip_hash:
+                print("Static GTFS unchanged — skipping reload")
+                return 0
+
+            load_static_gtfs(conn, base_dir)
+            set_current_static_hash(conn, zip_hash)
+
         print(f"Static GTFS loaded, hash={zip_hash}")
         return 0
     finally:
