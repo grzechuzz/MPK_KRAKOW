@@ -2,8 +2,8 @@ services:
   gtfs_db:
     image: postgres:17
     environment:
-      POSTGRES_DB: test
-      POSTGRES_USER: test
+      POSTGRES_DB: mpk_db
+      POSTGRES_USER: mpk
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
     ports:
       - "5432:5432"
@@ -11,6 +11,49 @@ services:
       - gtfs_pg:/var/lib/postgresql/data
     secrets:
       - db_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mpk -d mpk_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  importer:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.importer
+    environment:
+      DB_HOST: gtfs_db
+      DB_PORT: "5432"
+      DB_NAME: mpk_db
+      DB_USER: mpk
+      DB_PASSWORD_FILE: /run/secrets/db_password
+    depends_on:
+      gtfs_db:
+        condition: service_healthy
+    volumes:
+      - ../data:/app/data
+    secrets: 
+      - db_password 
+    restart: unless-stopped 
+
+  collector:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.collector
+    environment:
+      DB_HOST: gtfs_db
+      DB_PORT: "5432"
+      DB_NAME: mpk_db
+      DB_USER: mpk 
+      DB_PASSWORD_FILE: /run/secrets/db_password
+    depends_on: 
+      gtfs_db: 
+        condition: service_healthy
+      importer:
+        condition: service_started
+    secrets:
+      - db_password
+    restart: unless-stopped
 
 secrets:
   db_password:
@@ -18,3 +61,4 @@ secrets:
 
 volumes:
   gtfs_pg:
+
