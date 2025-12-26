@@ -41,13 +41,7 @@ def run() -> int:
         sha256_hex=zip_hash,
     )
 
-    # 4. check meta
-    current_hash = get_current_static_hash()
-    if current_hash == zip_hash:
-        print("Static GTFS unchanged — skipping reload")
-        return 0
-
-    # 5. extract + load
+    # 4. extract + load
     extract_root, base_dir = extract_gtfs_zip(archived_zip)
     try:
         with engine.begin() as conn:
