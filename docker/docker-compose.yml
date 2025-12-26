@@ -5,6 +5,8 @@ services:
       POSTGRES_DB: test
       POSTGRES_USER: test
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    ports:
+      - "5432:5432"
     volumes:
       - gtfs_pg:/var/lib/postgresql/data
     secrets:
