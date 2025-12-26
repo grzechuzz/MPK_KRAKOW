@@ -1,0 +1,27 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY app/common/requirements.txt /app/app/common/requirements.txt
+COPY app/collector/requirements.txt /app/app/collector/requirements.txt
+# temporary
+COPY app/importer/requirements.txt /app/app/importer/requirements.txt
+
+RUN pip install --no-cache-dir \
+    -r /app/app/common/requirements.txt \
+    -r /app/app/importer/requirements.txt \
+    -r /app/app/collector/requirements.txt
+
+COPY app /app/app
+COPY alembic.ini /app/alembic.ini
+COPY migrations /app/migrations
+
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+
+CMD ["python", "-m", "app.collector.collector.main"]
+

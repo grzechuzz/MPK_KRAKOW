@@ -40,8 +40,8 @@ def run_once() -> tuple[int, int]:
     with engine.begin() as conn:
         static_hash = get_current_static_hash(conn)
         if not static_hash:
-            raise RuntimeError("No current static hash in gtfs_meta; run importer first.")
-
+            print("[collector] waiting for importer/static (no gtfs_meta.current_hash yet)")
+            return 0, 0
         trips_by_id, stoptimes_by_key, _ = fetch_static_for_vp(
             conn,
             trip_ids=trip_ids,
