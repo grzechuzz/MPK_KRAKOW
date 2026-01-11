@@ -1,5 +1,6 @@
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
+
 from sqlalchemy import text
 
 
@@ -122,7 +123,9 @@ def fetch_static_for_vp(
                 stop_sequence=int(row["stop_sequence"]),
                 stop_id=row["stop_id"],
                 arrival_seconds=int(row["arrival_seconds"]),
-                departure_seconds=int(row["departure_seconds"]) if row["departure_seconds"] is not None else None,
+                departure_seconds=int(row["departure_seconds"])
+                if row["departure_seconds"] is not None
+                else None,
             )
 
     return trips_by_id, stoptimes_by_key, stops_by_id

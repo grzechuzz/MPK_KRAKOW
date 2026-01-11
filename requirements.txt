@@ -1,7 +1,0 @@
-requests
-SQLAlchemy
-alembic
-psycopg[binary]
-python-dotenv
-protobuf
-gtfs-realtime-bindings

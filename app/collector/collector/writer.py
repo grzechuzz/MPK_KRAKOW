@@ -1,8 +1,9 @@
+from collections.abc import Iterable
 from dataclasses import asdict
-from typing import Iterable
-from sqlalchemy import text
-from app.collector.collector.build import BuiltStopEvent
 
+from sqlalchemy import text
+
+from app.collector.collector.build import BuiltStopEvent
 
 _INSERT_STOP_EVENTS = text(
     """

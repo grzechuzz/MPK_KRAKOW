@@ -98,7 +98,7 @@ def upgrade() -> None:
             static_hash TEXT NOT NULL,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             PRIMARY KEY (id, service_date)
-        ) PARTITION BY RANGE (service_date) 
+        ) PARTITION BY RANGE (service_date)
     """)
 
     op.execute("""
@@ -117,17 +117,17 @@ def upgrade() -> None:
     """)
 
     op.execute("""
-        CREATE UNIQUE INDEX uq_stop_events_trip_date_seq 
-        ON stop_events (trip_id, service_date, stop_sequence)            
+        CREATE UNIQUE INDEX uq_stop_events_trip_date_seq
+        ON stop_events (trip_id, service_date, stop_sequence)
     """)
 
     op.execute("""
-        CREATE INDEX idx_stop_events_line_time 
+        CREATE INDEX idx_stop_events_line_time
         ON stop_events (line_number, event_time)
     """)
 
     op.execute("""
-        CREATE INDEX idx_stop_events_stop_time 
+        CREATE INDEX idx_stop_events_stop_time
         ON stop_events (stop_id, event_time)
     """)
 

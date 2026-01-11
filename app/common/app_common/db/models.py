@@ -1,6 +1,8 @@
-from sqlalchemy import BigInteger, SmallInteger, Identity, Text, Boolean, Integer, func, DateTime
-from sqlalchemy.orm import Mapped, mapped_column
 from datetime import date, datetime
+
+from sqlalchemy import BigInteger, Boolean, DateTime, Identity, Integer, SmallInteger, Text, func
+from sqlalchemy.orm import Mapped, mapped_column
+
 from .base import Base
 
 
@@ -9,7 +11,9 @@ class GtfsMeta(Base):
 
     id: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
     current_hash: Mapped[str] = mapped_column(Text, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
 
 
 class StopEvent(Base):
@@ -30,4 +34,6 @@ class StopEvent(Base):
     trip_id: Mapped[str] = mapped_column(Text, nullable=False)
     stop_id: Mapped[str] = mapped_column(Text, nullable=False)
     static_hash: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )

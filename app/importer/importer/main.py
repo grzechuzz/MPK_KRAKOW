@@ -9,7 +9,6 @@ from app.importer.importer.download import download_gtfs_zip
 from app.importer.importer.extract import extract_gtfs_zip
 from app.importer.importer.load import load_static_gtfs
 
-
 URL = "https://gtfs.ztp.krakow.pl/GTFS_KRK_A.zip"
 
 

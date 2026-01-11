@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=76.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mpk-krakow"
+version = "0.1.0"
+description = "MPK Krakow data"
+requires-python = ">=3.13"
+dependencies = [
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.3",
+    "redis>=6.0",
+    "requests>=2.31",
+    "protobuf>=6.31",
+    "gtfs-realtime-bindings>=2.0",
+    "alembic>=1.16"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0",
+    "pytest-cov>=6.0",
+    "ruff>=0.13",
+    "mypy>=1.18",
+    "pre-commit>=4.0"
+
+]
+
+[project.scripts]
+collector = "app.collector.collector.main:main"
+importer = "app.importer.importer.main:run"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+exclude = [
+    ".git",
+    ".venv",
+    "migrations",
+    "__pycache__"
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "N", "W"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]

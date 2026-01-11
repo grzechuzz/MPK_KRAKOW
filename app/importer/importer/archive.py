@@ -1,12 +1,14 @@
-from pathlib import Path
 import shutil
+from pathlib import Path
 
 
 class ArchiveError(RuntimeError):
     pass
 
 
-def archive_zip_by_hash(downloaded_zip: str | Path, archive_dir: str | Path, sha256_hex: str) -> Path:
+def archive_zip_by_hash(
+    downloaded_zip: str | Path, archive_dir: str | Path, sha256_hex: str
+) -> Path:
     downloaded_zip = Path(downloaded_zip)
     archive_dir = Path(archive_dir)
     archive_dir.mkdir(parents=True, exist_ok=True)

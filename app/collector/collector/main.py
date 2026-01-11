@@ -1,7 +1,9 @@
 import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
+
 from sqlalchemy import text
+
 from app.collector.collector.build import build_stop_events
 from app.collector.collector.fetch import fetch_vehicle_positions_pb
 from app.collector.collector.parse import parse_vehicle_positions
@@ -35,7 +37,9 @@ def run_once() -> tuple[int, int]:
     feed_ts, items = parse_vehicle_positions(pb)
 
     trip_ids = [x.trip_id for x in items]
-    trip_seq_pairs = [(x.trip_id, int(x.stop_sequence)) for x in items if x.stop_sequence is not None]
+    trip_seq_pairs = [
+        (x.trip_id, int(x.stop_sequence)) for x in items if x.stop_sequence is not None
+    ]
 
     with engine.begin() as conn:
         static_hash = get_current_static_hash(conn)
@@ -67,7 +71,7 @@ def run_once() -> tuple[int, int]:
 
 
 def main() -> None:
-    print(f"[collector] start { _now_str(TZ) } poll={POLL_SECONDS}s")
+    print(f"[collector] start {_now_str(TZ)} poll={POLL_SECONDS}s")
     while True:
         t0 = time.time()
         try:

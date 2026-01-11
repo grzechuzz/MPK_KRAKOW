@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import requests
 
 
@@ -6,7 +7,9 @@ class DownloadError(RuntimeError):
     pass
 
 
-def download_gtfs_zip(url: str, dest_dir: str | Path, filename: str = "GTFS_KRK_A.zip", timeout_seconds: int = 30) -> Path:
+def download_gtfs_zip(
+    url: str, dest_dir: str | Path, filename: str = "GTFS_KRK_A.zip", timeout_seconds: int = 30
+) -> Path:
     dest_dir = Path(dest_dir)
     dest_dir.mkdir(parents=True, exist_ok=True)
 
