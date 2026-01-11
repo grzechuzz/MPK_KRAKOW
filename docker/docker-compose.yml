@@ -32,9 +32,9 @@ services:
         condition: service_healthy
     volumes:
       - ../data:/app/data
-    secrets: 
-      - db_password 
-    restart: unless-stopped 
+    secrets:
+      - db_password
+    restart: unless-stopped
 
   collector:
     build:
@@ -44,10 +44,10 @@ services:
       DB_HOST: gtfs_db
       DB_PORT: "5432"
       DB_NAME: mpk_db
-      DB_USER: mpk 
+      DB_USER: mpk
       DB_PASSWORD_FILE: /run/secrets/db_password
-    depends_on: 
-      gtfs_db: 
+    depends_on:
+      gtfs_db:
         condition: service_healthy
       importer:
         condition: service_started
@@ -61,4 +61,3 @@ secrets:
 
 volumes:
   gtfs_pg:
-
