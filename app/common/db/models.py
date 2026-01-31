@@ -1,17 +1,17 @@
-from datetime import datetime, date
+from datetime import date, datetime
 
 from sqlalchemy import (
+    TIMESTAMP,
     BigInteger,
     Boolean,
     Date,
     Double,
     ForeignKey,
     Identity,
+    Index,
     Integer,
     SmallInteger,
     Text,
-    TIMESTAMP,
-    Index,
     text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship

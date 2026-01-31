@@ -32,7 +32,7 @@ collector = "app.collector.collector.main:main"
 importer = "app.importer.importer.main:run"
 
 [tool.ruff]
-line-length = 100
+line-length = 120
 target-version = "py313"
 
 exclude = [

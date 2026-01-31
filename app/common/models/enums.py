@@ -1,6 +1,7 @@
 from enum import IntEnum, StrEnum
 from typing import Self
 
+
 class Agency(StrEnum):
     MPK = "mpk"
     MOBILIS = "mobilis"

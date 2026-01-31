@@ -1,8 +1,8 @@
-from functools import lru_cache
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Generator
+from functools import lru_cache
 
-from sqlalchemy import create_engine, Engine
+from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.common.config import get_config
@@ -27,7 +27,7 @@ def get_session_factory() -> sessionmaker[Session]:
 
 
 @contextmanager
-def get_session() -> Generator[Session, None, None]:
+def get_session() -> Generator[Session]:
     factory = get_session_factory()
     session = factory()
     try:
