@@ -43,5 +43,4 @@ class TripUpdate:
     trip_id: str
     vehicle_id: str | None
     timestamp: datetime
-    stop_time_updates: tuple[StopTimeUpdate, ...]
-
+    stop_time_updates: list[StopTimeUpdate]
