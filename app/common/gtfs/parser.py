@@ -1,4 +1,5 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from google.transit import gtfs_realtime_pb2
 
 from app.common.models.enums import Agency, VehicleStatus
@@ -48,7 +49,7 @@ def parse_vehicle_positions(pb_data: bytes, agency: Agency) -> list[VehiclePosit
         ts = v.timestamp if v.timestamp else None
         if not ts:
             continue
-        timestamp = datetime.fromtimestamp(ts, tz=timezone.utc)
+        timestamp = datetime.fromtimestamp(ts, tz=UTC)
 
         results.append(
             VehiclePosition(
@@ -94,7 +95,7 @@ def parse_trip_updates(pb_data: bytes, agency: Agency) -> list[TripUpdate]:
         ts = tu.timestamp if tu.timestamp else None
         if not ts:
             continue
-        timestamp = datetime.fromtimestamp(ts, tz=timezone.utc)
+        timestamp = datetime.fromtimestamp(ts, tz=UTC)
 
         stop_time_updates: list[StopTimeUpdate] = []
         for stu in tu.stop_time_update:
@@ -104,11 +105,11 @@ def parse_trip_updates(pb_data: bytes, agency: Agency) -> list[TripUpdate]:
 
             arrival_time = None
             if stu.HasField("arrival") and stu.arrival.time:
-                arrival_time = datetime.fromtimestamp(stu.arrival.time, tz=timezone.utc)
+                arrival_time = datetime.fromtimestamp(stu.arrival.time, tz=UTC)
 
             departure_time = None
             if stu.HasField("departure") and stu.departure.time:
-                departure_time = datetime.fromtimestamp(stu.departure.time, tz=timezone.utc)
+                departure_time = datetime.fromtimestamp(stu.departure.time, tz=UTC)
 
             if arrival_time is None and departure_time is None:
                 continue
