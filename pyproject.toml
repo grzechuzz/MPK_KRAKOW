@@ -28,10 +28,6 @@ dev = [
 
 ]
 
-[project.scripts]
-collector = "app.collector.collector.main:main"
-importer = "app.importer.importer.main:run"
-
 [tool.ruff]
 line-length = 120
 target-version = "py313"
@@ -49,8 +45,9 @@ select = ["E", "F", "I", "UP", "N", "W"]
 [tool.mypy]
 python_version = "3.13"
 strict = true
-ignore_missing_imports = true
 explicit_package_bases = true
+plugins = ["sqlalchemy.ext.mypy.plugin"]
+exclude = ["migrations"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -59,6 +56,14 @@ addopts = "-v"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["app*"]
+
+[[tool.mypy.overrides]]
+module = [
+    "gtfs_realtime_bindings.*",
+    "redis.*",
+    "google.transit.*"
+]
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "tests.*"
