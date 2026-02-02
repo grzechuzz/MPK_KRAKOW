@@ -45,7 +45,7 @@ class StopEventRepository:
         stmt = stmt.on_conflict_do_nothing(index_elements=["trip_id", "service_date", "stop_sequence"])
 
         result = self._session.execute(stmt)
-        return result.rowcount or 0
+        return result.rowcount or 0  # type: ignore[attr-defined]
 
     def exists(self, trip_id: str, service_date: date, stop_sequence: int) -> bool:
         stmt = (
