@@ -29,10 +29,14 @@ class RedisConfig:
     host: str
     port: int
     db: int
+    username: str
+    password: str
 
     @property
     def url(self) -> str:
-        return f"redis://{self.host}:{self.port}/{self.db}"
+        if self.username:
+            return f"redis://{self.username}:{self.password}@{self.host}:{self.port}/{self.db}"
+        return f"redis://:{self.password}@{self.host}:{self.port}/{self.db}"
 
 
 @dataclass(frozen=True)
@@ -50,6 +54,10 @@ def get_config() -> AppConfig:
     if not db_password:
         raise ValueError("DB_PASSWORD must be set")
 
+    redis_password = _read_secret_file("REDIS_PASSWORD_FILE") or os.getenv("REDIS_PASSWORD")
+    if not redis_password:
+        raise ValueError("REDIS_PASSWORD must be set")
+
     return AppConfig(
         database=DatabaseConfig(
             host=os.getenv("DB_HOST", "localhost"),
@@ -62,6 +70,8 @@ def get_config() -> AppConfig:
             host=os.getenv("REDIS_HOST", "localhost"),
             port=int(os.getenv("REDIS_PORT", "6379")),
             db=int(os.getenv("REDIS_DB", "0")),
+            username=os.getenv("REDIS_USERNAME", "mpk_redis"),
+            password=redis_password,
         ),
         timezone=os.getenv("TZ", "Europe/Warsaw"),
         data_dir=Path(os.getenv("DATA_DIR", "/app/data")),
