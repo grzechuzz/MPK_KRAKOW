@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
 import redis
+
 from app.common.models.gtfs_realtime import TripUpdate
 from app.common.redis import serializer
 from app.common.redis.schemas import CachedStopTime, TripUpdateCache

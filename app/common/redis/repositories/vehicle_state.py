@@ -1,4 +1,5 @@
 import redis
+
 from app.common.redis import serializer
 from app.common.redis.schemas import VehicleState
 

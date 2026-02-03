@@ -1,6 +1,7 @@
 from functools import lru_cache
 
 import redis
+
 from app.common.config import get_config
 
 
