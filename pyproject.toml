@@ -42,6 +42,9 @@ exclude = [
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "N", "W"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
 [tool.mypy]
 python_version = "3.13"
 strict = true
@@ -60,7 +63,6 @@ include = ["app*"]
 [[tool.mypy.overrides]]
 module = [
     "gtfs_realtime_bindings.*",
-    "redis.*",
     "google.transit.*"
 ]
 ignore_missing_imports = true
