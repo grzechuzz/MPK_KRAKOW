@@ -211,3 +211,4 @@ __marimo__/
 *.zip
 *.part
 data/
+redis/users.acl

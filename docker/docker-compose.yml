@@ -17,43 +17,13 @@ services:
       timeout: 3s
       retries: 30
 
-  importer:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.importer
-    environment:
-      DB_HOST: gtfs_db
-      DB_PORT: "5432"
-      DB_NAME: mpk_db
-      DB_USER: mpk
-      DB_PASSWORD_FILE: /run/secrets/db_password
-    depends_on:
-      gtfs_db:
-        condition: service_healthy
+  redis:
+    image: redis:7-alpine
+    command: redis-server --aclfile /usr/local/etc/redis/users.acl
+    ports:
+      - "127.0.0.1:6379:6379"
     volumes:
-      - ../data:/app/data
-    secrets:
-      - db_password
-    restart: unless-stopped
-
-  collector:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.collector
-    environment:
-      DB_HOST: gtfs_db
-      DB_PORT: "5432"
-      DB_NAME: mpk_db
-      DB_USER: mpk
-      DB_PASSWORD_FILE: /run/secrets/db_password
-    depends_on:
-      gtfs_db:
-        condition: service_healthy
-      importer:
-        condition: service_started
-    secrets:
-      - db_password
-    restart: unless-stopped
+      - ./redis/users.acl:/usr/local/etc/redis/users.acl:ro
 
 secrets:
   db_password:
