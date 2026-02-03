@@ -18,7 +18,7 @@ services:
       retries: 30
 
   redis:
-    image: redis:8-alpine
+    image: redis:7-alpine
     command: redis-server --aclfile /usr/local/etc/redis/users.acl
     ports:
       - "127.0.0.1:6379:6379"
