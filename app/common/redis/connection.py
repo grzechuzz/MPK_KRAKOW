@@ -14,7 +14,7 @@ def get_client() -> redis.Redis:
         db=config.redis.db,
         username=config.redis.username,
         password=config.redis.password,
-        decode_responses=True,
+        decode_responses=False,
         socket_connect_timeout=5,
         socket_keepalive=True,
         health_check_interval=30,
