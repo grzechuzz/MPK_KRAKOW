@@ -23,7 +23,7 @@ services:
     ports:
       - "127.0.0.1:6379:6379"
     volumes:
-      - ./redis/users.acl:/usr/local/etc/redis/users.acl:ro
+      - ../redis/users.acl:/usr/local/etc/redis/users.acl:ro
 
 secrets:
   db_password:
