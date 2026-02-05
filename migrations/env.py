@@ -1,3 +1,4 @@
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -10,6 +11,9 @@ from app.common.db.models import Base
 from app.common.db import models  # noqa: F401
 from app.common.config import get_config
 
+# Fake Redis config for migrations (not used)
+os.environ.setdefault("REDIS_PASSWORD", "fake_for_migrations")
+os.environ.setdefault("REDIS_HOST", "localhost")
 
 url = get_config().database.url
 # this is the Alembic Config object, which provides
