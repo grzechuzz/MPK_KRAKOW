@@ -63,12 +63,19 @@ def load_gtfs_zip(session: Session, zip_path: Path, agency_id: str) -> None:
         with zf.open("stops.txt") as f:
             reader = csv.DictReader(line.decode("utf-8-sig") for line in f)
             for row in reader:
-                writer.writerow([
-                    row["stop_id"], row["stop_name"], row["stop_code"],
-                    row["stop_desc"], row["stop_lat"], row["stop_lon"]
-                ])
-        _copy_from_csv(session, "current_stops",
-                      ["stop_id", "stop_name", "stop_code", "stop_desc", "stop_lat", "stop_lon"], buf)
+                writer.writerow(
+                    [
+                        row["stop_id"],
+                        row["stop_name"],
+                        row["stop_code"],
+                        row["stop_desc"],
+                        row["stop_lat"],
+                        row["stop_lon"],
+                    ]
+                )
+        _copy_from_csv(
+            session, "current_stops", ["stop_id", "stop_name", "stop_code", "stop_desc", "stop_lat", "stop_lon"], buf
+        )
 
         logger.info(f"[{agency_id}] Loading trips...")
         buf = io.StringIO()
@@ -76,12 +83,19 @@ def load_gtfs_zip(session: Session, zip_path: Path, agency_id: str) -> None:
         with zf.open("trips.txt") as f:
             reader = csv.DictReader(line.decode("utf-8-sig") for line in f)
             for row in reader:
-                writer.writerow([
-                    row["trip_id"], row["route_id"], row["service_id"],
-                    row["direction_id"], row["trip_headsign"], row["shape_id"]
-                ])
-        _copy_from_csv(session, "current_trips",
-                      ["trip_id", "route_id", "service_id", "direction_id", "headsign", "shape_id"], buf)
+                writer.writerow(
+                    [
+                        row["trip_id"],
+                        row["route_id"],
+                        row["service_id"],
+                        row["direction_id"],
+                        row["trip_headsign"],
+                        row["shape_id"],
+                    ]
+                )
+        _copy_from_csv(
+            session, "current_trips", ["trip_id", "route_id", "service_id", "direction_id", "headsign", "shape_id"], buf
+        )
 
         logger.info(f"[{agency_id}] Loading stop_times...")
         buf = io.StringIO()
@@ -89,13 +103,21 @@ def load_gtfs_zip(session: Session, zip_path: Path, agency_id: str) -> None:
         with zf.open("stop_times.txt") as f:
             reader = csv.DictReader(line.decode("utf-8-sig") for line in f)
             for row in reader:
-                writer.writerow([
-                    row["trip_id"], row["stop_sequence"], row["stop_id"],
-                    parse_gtfs_time_to_seconds(row["arrival_time"]),
-                    parse_gtfs_time_to_seconds(row["departure_time"])
-                ])
-        _copy_from_csv(session, "current_stop_times",
-                      ["trip_id", "stop_sequence", "stop_id", "arrival_seconds", "departure_seconds"], buf)
+                writer.writerow(
+                    [
+                        row["trip_id"],
+                        row["stop_sequence"],
+                        row["stop_id"],
+                        parse_gtfs_time_to_seconds(row["arrival_time"]),
+                        parse_gtfs_time_to_seconds(row["departure_time"]),
+                    ]
+                )
+        _copy_from_csv(
+            session,
+            "current_stop_times",
+            ["trip_id", "stop_sequence", "stop_id", "arrival_seconds", "departure_seconds"],
+            buf,
+        )
 
         logger.info(f"[{agency_id}] Loading shapes...")
         buf = io.StringIO()
@@ -103,12 +125,14 @@ def load_gtfs_zip(session: Session, zip_path: Path, agency_id: str) -> None:
         with zf.open("shapes.txt") as f:
             reader = csv.DictReader(line.decode("utf-8-sig") for line in f)
             for row in reader:
-                writer.writerow([
-                    agency_id, row["shape_id"], row["shape_pt_lat"],
-                    row["shape_pt_lon"], row["shape_pt_sequence"]
-                ])
-        _copy_from_csv(session, "current_shapes",
-                      ["agency_id", "shape_id", "shape_pt_lat", "shape_pt_lon", "shape_pt_sequence"], buf)
+                writer.writerow(
+                    [agency_id, row["shape_id"], row["shape_pt_lat"], row["shape_pt_lon"], row["shape_pt_sequence"]]
+                )
+        _copy_from_csv(
+            session,
+            "current_shapes",
+            ["agency_id", "shape_id", "shape_pt_lat", "shape_pt_lon", "shape_pt_sequence"],
+            buf,
+        )
 
         logger.info(f"[{agency_id}] All data loaded, committing...")
-

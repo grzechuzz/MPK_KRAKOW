@@ -9,10 +9,7 @@ from app.common.gtfs.hashing import sha256_file
 from app.importer.download import download_gtfs_zip
 from app.importer.load import load_gtfs_zip
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
