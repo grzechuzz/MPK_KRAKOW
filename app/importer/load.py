@@ -1,159 +1,149 @@
 import csv
+import io
+import logging
 import zipfile
-from collections.abc import Generator, Iterable
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import delete
-from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.common.db.models import CurrentRoute, CurrentShape, CurrentStop, CurrentStopTime, CurrentTrip
 from app.common.gtfs.timeparse import parse_gtfs_time_to_seconds
 
-BATCH_SIZE = 5000
+logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class TableMapping:
+    """Configuration for loading a GTFS file into a database table."""
+
+    gtfs_file: str
+    table_name: str
+    columns: list[str]
+    row_transformer: Callable[[dict[str, str], str], list[Any]]
+
+
+def _routes_transformer(row: dict[str, str], agency_id: str) -> list[Any]:
+    return [row["route_id"], agency_id, row["route_short_name"]]
+
+
+def _stops_transformer(row: dict[str, str], agency_id: str) -> list[Any]:
+    return [row["stop_id"], row["stop_name"], row["stop_code"], row["stop_desc"], row["stop_lat"], row["stop_lon"]]
+
+
+def _trips_transformer(row: dict[str, str], agency_id: str) -> list[Any]:
+    return [
+        row["trip_id"],
+        row["route_id"],
+        row["service_id"],
+        row["direction_id"],
+        row["trip_headsign"],
+        row["shape_id"],
+    ]
+
+
+def _stop_times_transformer(row: dict[str, str], agency_id: str) -> list[Any]:
+    return [
+        row["trip_id"],
+        row["stop_sequence"],
+        row["stop_id"],
+        parse_gtfs_time_to_seconds(row["arrival_time"]),
+        parse_gtfs_time_to_seconds(row["departure_time"]),
+    ]
+
+
+def _shapes_transformer(row: dict[str, str], agency_id: str) -> list[Any]:
+    return [agency_id, row["shape_id"], row["shape_pt_lat"], row["shape_pt_lon"], row["shape_pt_sequence"]]
+
+
+TABLE_MAPPINGS = [
+    TableMapping("routes.txt", "current_routes", ["route_id", "agency_id", "route_short_name"], _routes_transformer),
+    TableMapping(
+        "stops.txt",
+        "current_stops",
+        ["stop_id", "stop_name", "stop_code", "stop_desc", "stop_lat", "stop_lon"],
+        _stops_transformer,
+    ),
+    TableMapping(
+        "trips.txt",
+        "current_trips",
+        ["trip_id", "route_id", "service_id", "direction_id", "headsign", "shape_id"],
+        _trips_transformer,
+    ),
+    TableMapping(
+        "stop_times.txt",
+        "current_stop_times",
+        ["trip_id", "stop_sequence", "stop_id", "arrival_seconds", "departure_seconds"],
+        _stop_times_transformer,
+    ),
+    TableMapping(
+        "shapes.txt",
+        "current_shapes",
+        ["agency_id", "shape_id", "shape_pt_lat", "shape_pt_lon", "shape_pt_sequence"],
+        _shapes_transformer,
+    ),
+]
+
+
+def _delete_agency_data(session: Session, agency_id: str) -> None:
+    """Delete all GTFS data for a specific agency using efficient subqueries."""
+    logger.info(f"[{agency_id}] Deleting old data...")
+
+    routes_subq = select(CurrentRoute.route_id).where(CurrentRoute.agency_id == agency_id)
+    trips_subq = select(CurrentTrip.trip_id).where(CurrentTrip.route_id.in_(routes_subq))
+    stops_subq = select(CurrentStopTime.stop_id.distinct()).where(CurrentStopTime.trip_id.in_(trips_subq))
+
+    session.execute(delete(CurrentStopTime).where(CurrentStopTime.trip_id.in_(trips_subq)))
+    session.execute(delete(CurrentStop).where(CurrentStop.stop_id.in_(stops_subq)))
+    session.execute(delete(CurrentTrip).where(CurrentTrip.route_id.in_(routes_subq)))
+    session.execute(delete(CurrentRoute).where(CurrentRoute.agency_id == agency_id))
+    session.execute(delete(CurrentShape).where(CurrentShape.agency_id == agency_id))
+
+    session.flush()
+    logger.info(f"[{agency_id}] Delete complete")
+
+
+def _copy_to_table(session: Session, table_name: str, columns: list[str], data: io.StringIO) -> None:
+    """
+    Previously I used simple batch insert but it was sooooo slow, now using COPY
+    """
+    raw_conn = session.connection().connection.dbapi_connection
+    if raw_conn is None:
+        raise RuntimeError("No database connection available")
+
+    cursor = raw_conn.cursor()
+    data.seek(0)
+
+    with cursor.copy(f"COPY {table_name} ({','.join(columns)}) FROM STDIN WITH (FORMAT CSV)") as copy:
+        copy.write(data.getvalue())
+
+
+def _load_table(session: Session, zf: zipfile.ZipFile, mapping: TableMapping, agency_id: str) -> None:
+    """Load a single GTFS file into its corresponding database table."""
+    logger.info(f"[{agency_id}] Loading {mapping.gtfs_file}...")
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+
+    with zf.open(mapping.gtfs_file) as f:
+        reader = csv.DictReader(line.decode("utf-8-sig") for line in f)
+        for row in reader:
+            writer.writerow(mapping.row_transformer(row, agency_id))
+
+    _copy_to_table(session, mapping.table_name, mapping.columns, buf)
 
 
 def load_gtfs_zip(session: Session, zip_path: Path, agency_id: str) -> None:
-    """
-    Load GTFS static data from ZIP file into current_* tables in DB. Clears existing data and loads fresh.
-    """
+    """Load GTFS static data."""
+    logger.info(f"[{agency_id}] Opening ZIP: {zip_path}")
+
     with zipfile.ZipFile(zip_path, "r") as zf:
-        session.execute(delete(CurrentStopTime))
-        session.execute(delete(CurrentShape))
-        session.execute(delete(CurrentTrip))
-        session.execute(delete(CurrentStop))
-        session.execute(delete(CurrentRoute))
-        session.flush()
+        _delete_agency_data(session, agency_id)
 
-        _load_routes(session, zf, agency_id)
-        _load_stops(session, zf)
-        _load_trips(session, zf)
-        _load_stop_times(session, zf)
-        _load_shapes(session, zf, agency_id)
+        for mapping in TABLE_MAPPINGS:
+            _load_table(session, zf, mapping, agency_id)
 
-
-def batch_iterator(iterable: Iterable[Any], batch_size: int = BATCH_SIZE) -> Generator[list[Any]]:
-    batch = []
-    for item in iterable:
-        batch.append(item)
-        if len(batch) >= batch_size:
-            yield batch
-            batch = []
-    if batch:
-        yield batch
-
-
-def _load_routes(session: Session, zf: zipfile.ZipFile, agency_id: str) -> None:
-    with zf.open("routes.txt") as f:
-        reader = csv.DictReader(line.decode("utf-8-sig") for line in f)
-        rows_gen = (
-            {"route_id": row["route_id"], "agency_id": agency_id, "route_short_name": row["route_short_name"]}
-            for row in reader
-        )
-
-        for batch in batch_iterator(rows_gen):
-            stmt = insert(CurrentRoute).values(batch)
-            stmt = stmt.on_conflict_do_update(
-                index_elements=[CurrentRoute.route_id],
-                set_={"agency_id": stmt.excluded.agency_id, "route_short_name": stmt.excluded.route_short_name},
-            )
-            session.execute(stmt)
-
-
-def _load_stops(session: Session, zf: zipfile.ZipFile) -> None:
-    with zf.open("stops.txt") as f:
-        reader = csv.DictReader(line.decode("utf-8-sig") for line in f)
-        rows_gen = (
-            {
-                "stop_id": row["stop_id"],
-                "stop_name": row["stop_name"],
-                "stop_code": row["stop_code"],
-                "stop_desc": row["stop_desc"],
-                "stop_lat": float(row["stop_lat"]),
-                "stop_lon": float(row["stop_lon"]),
-            }
-            for row in reader
-        )
-
-        for batch in batch_iterator(rows_gen):
-            stmt = insert(CurrentStop).values(batch)
-            stmt = stmt.on_conflict_do_update(
-                index_elements=[CurrentStop.stop_id],
-                set_={
-                    "stop_name": stmt.excluded.stop_name,
-                    "stop_code": stmt.excluded.stop_code,
-                    "stop_desc": stmt.excluded.stop_desc,
-                    "stop_lat": stmt.excluded.stop_lat,
-                    "stop_lon": stmt.excluded.stop_lon,
-                },
-            )
-            session.execute(stmt)
-
-
-def _load_trips(session: Session, zf: zipfile.ZipFile) -> None:
-    with zf.open("trips.txt") as f:
-        reader = csv.DictReader(line.decode("utf-8-sig") for line in f)
-        rows_gen = (
-            {
-                "trip_id": row["trip_id"],
-                "route_id": row["route_id"],
-                "service_id": row["service_id"],
-                "direction_id": int(row["direction_id"]),
-                "headsign": row["trip_headsign"],
-                "shape_id": row["shape_id"],
-            }
-            for row in reader
-        )
-
-        for batch in batch_iterator(rows_gen):
-            stmt = insert(CurrentTrip).values(batch)
-            stmt = stmt.on_conflict_do_update(
-                index_elements=[CurrentTrip.trip_id],
-                set_={
-                    "route_id": stmt.excluded.route_id,
-                    "service_id": stmt.excluded.service_id,
-                    "direction_id": stmt.excluded.direction_id,
-                    "headsign": stmt.excluded.headsign,
-                    "shape_id": stmt.excluded.shape_id,
-                },
-            )
-            session.execute(stmt)
-
-
-def _load_stop_times(session: Session, zf: zipfile.ZipFile) -> None:
-    with zf.open("stop_times.txt") as f:
-        reader = csv.DictReader(line.decode("utf-8-sig") for line in f)
-        rows_gen = (
-            {
-                "trip_id": row["trip_id"],
-                "stop_sequence": int(row["stop_sequence"]),
-                "stop_id": row["stop_id"],
-                "arrival_seconds": parse_gtfs_time_to_seconds(row["arrival_time"]),
-                "departure_seconds": parse_gtfs_time_to_seconds(row["departure_time"]),
-            }
-            for row in reader
-        )
-
-        for batch in batch_iterator(rows_gen):
-            stmt = insert(CurrentStopTime).values(batch)
-            stmt = stmt.on_conflict_do_nothing(index_elements=[CurrentStopTime.trip_id, CurrentStopTime.stop_sequence])
-            session.execute(stmt)
-
-
-def _load_shapes(session: Session, zf: zipfile.ZipFile, agency_id: str) -> None:
-    with zf.open("shapes.txt") as f:
-        reader = csv.DictReader(line.decode("utf-8-sig") for line in f)
-        rows_gen = (
-            {
-                "agency_id": agency_id,
-                "shape_id": row["shape_id"],
-                "shape_pt_lat": float(row["shape_pt_lat"]),
-                "shape_pt_lon": float(row["shape_pt_lon"]),
-                "shape_pt_sequence": int(row["shape_pt_sequence"]),
-            }
-            for row in reader
-        )
-
-        for batch in batch_iterator(rows_gen):
-            session.execute(insert(CurrentShape).values(batch))
+        logger.info(f"[{agency_id}] All data loaded, committing...")
