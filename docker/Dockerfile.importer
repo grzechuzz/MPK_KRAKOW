@@ -15,4 +15,4 @@ RUN pip install --no-cache-dir .
 
 ENV PYTHONUNBUFFERED=1
 
-CMD ["bash", "-lc", "alembic upgrade head && importer && while true; do sleep 3600; importer; done"]
+CMD ["bash", "-c", "alembic upgrade head && python -m app.importer.main"]
