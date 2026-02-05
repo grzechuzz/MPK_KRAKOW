@@ -83,7 +83,7 @@ class CurrentStopTime(Base):
     trip: Mapped["CurrentTrip"] = relationship(back_populates="stop_times")
     stop: Mapped["CurrentStop"] = relationship(back_populates="stop_times")
 
-    __table_args__ = Index("idx_current_stop_times_stop", "stop_id")
+    __table_args__ = (Index("idx_current_stop_times_stop", "stop_id"),)
 
 
 class CurrentShape(Base):
