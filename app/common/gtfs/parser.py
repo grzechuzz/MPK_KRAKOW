@@ -10,8 +10,14 @@ def parse_vehicle_positions(pb_data: bytes, agency: Agency) -> list[VehiclePosit
     """
     Parse vehicle positions from VehiclePositions.pb feed.
     """
+    if not pb_data or len(pb_data) < 10:
+        return []
+
     feed = gtfs_realtime_pb2.FeedMessage()
-    feed.ParseFromString(pb_data)
+    try:
+        feed.ParseFromString(pb_data)
+    except Exception:
+        return []
 
     results: list[VehiclePosition] = []
 
