@@ -44,6 +44,32 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
 
+  rt_poller:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.rt_poller
+    restart: unless-stopped
+    depends_on:
+      gtfs_db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      gtfs_importer:
+        condition: service_started
+    secrets:
+      - db_password
+      - redis_password
+    environment:
+      DB_PASSWORD_FILE: /run/secrets/db_password
+      DB_HOST: gtfs_db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      REDIS_PASSWORD_FILE: /run/secrets/redis_password
+      REDIS_USERNAME: ${REDIS_USER}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
 secrets:
   db_password:
     file: ../secrets/db_password
