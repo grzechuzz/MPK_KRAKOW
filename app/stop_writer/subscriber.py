@@ -6,7 +6,7 @@ from datetime import datetime
 import redis
 
 from app.common.models.enums import Agency, VehicleStatus
-from app.stop_writer.detection.detector import VehicleUpdate
+from app.common.models.gtfs_realtime import VehiclePosition
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ class Subscriber:
         self._pubsub = redis_client.pubsub()  # type: ignore[no-untyped-call]
         self._pubsub.subscribe(VEHICLE_POSITIONS_CHANNEL)
 
-    def listen(self) -> Iterator[VehicleUpdate]:
+    def listen(self) -> Iterator[VehiclePosition]:
         """
         Listen for vehicle position messages and yields VehicleUpdate for each message.
         """
@@ -29,11 +29,14 @@ class Subscriber:
 
             try:
                 data = json.loads(message["data"])
-                yield VehicleUpdate(
+                yield VehiclePosition(
                     agency=Agency(data["agency"]),
                     trip_id=data["trip_id"],
                     vehicle_id=data["vehicle_id"],
                     license_plate=data["license_plate"],
+                    latitude=None,
+                    longitude=None,
+                    bearing=None,
                     stop_id=data["stop_id"],
                     stop_sequence=data["stop_sequence"],
                     status=VehicleStatus(data["status"]) if data["status"] else None,
