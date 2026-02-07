@@ -1,6 +1,3 @@
-from datetime import date
-
-from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -45,4 +42,4 @@ class StopEventRepository:
         stmt = stmt.on_conflict_do_nothing(index_elements=["trip_id", "service_date", "stop_sequence"])
 
         result = self._session.execute(stmt)
-        return result.rowcount or 0  # type: ignore[attr-defined]
+        return max(result.rowcount or 0)  # type: ignore[attr-defined]
