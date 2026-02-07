@@ -103,8 +103,8 @@ class StopEventDetector:
             prev_seq = prev_state.current_stop_sequence
             curr_seq = vp.stop_sequence
 
-            if curr_seq > prev_seq + 1:
-                for missed_seq in range(prev_seq + 1, curr_seq):
+            if curr_seq > prev_seq:
+                for missed_seq in range(prev_seq, curr_seq):
                     if self._saved_seqs.is_saved(agency_str, vp.trip_id, service_date, missed_seq):
                         continue
 
