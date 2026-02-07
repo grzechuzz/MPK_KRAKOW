@@ -20,7 +20,3 @@ class SavedSequencesRepository:
         key = self._key(agency, trip_id, service_date)
         self._redis.sadd(key, str(stop_sequence))
         self._redis.expire(key, SAVED_SEQS_TTL)
-
-    def get_saved(self, agency: str, trip_id: str, service_date: date) -> set[int]:
-        members = self._redis.smembers(self._key(agency, trip_id, service_date))
-        return {int(m.decode()) for m in members}  # type: ignore[union-attr]
