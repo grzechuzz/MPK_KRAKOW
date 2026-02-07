@@ -1,7 +1,7 @@
 import logging
 import signal
-from typing import Any
 from threading import Event
+from typing import Any
 
 from app.common.db.connection import get_session
 from app.common.gtfs.readiness import wait_for_gtfs_ready
