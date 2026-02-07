@@ -102,18 +102,18 @@ def upgrade() -> None:
     """)
 
     op.execute("""
-        CREATE TABLE stop_events_2025_01 PARTITION OF stop_events
-        FOR VALUES FROM ('2025-01-01') TO ('2025-02-01')
+        CREATE TABLE stop_events_2026_02 PARTITION OF stop_events
+        FOR VALUES FROM ('2026-02-01') TO ('2026-03-01')
     """)
 
     op.execute("""
-        CREATE TABLE stop_events_2025_02 PARTITION OF stop_events
-        FOR VALUES FROM ('2025-02-01') TO ('2025-03-01')
+        CREATE TABLE stop_events_2026_03 PARTITION OF stop_events
+        FOR VALUES FROM ('2026-03-01') TO ('2026-04-01')
     """)
 
     op.execute("""
-        CREATE TABLE stop_events_2025_03 PARTITION OF stop_events
-        FOR VALUES FROM ('2025-03-01') TO ('2025-04-01')
+        CREATE TABLE stop_events_2026_04 PARTITION OF stop_events
+        FOR VALUES FROM ('2026-04-01') TO ('2026-05-01')
     """)
 
     op.execute("""
@@ -133,9 +133,9 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_table("stop_events_2025_03")
-    op.drop_table("stop_events_2025_02")
-    op.drop_table("stop_events_2025_01")
+    op.drop_table("stop_events_2026_03")
+    op.drop_table("stop_events_2026_02")
+    op.drop_table("stop_events_2026_01")
     op.drop_table("stop_events")
     op.drop_table("current_shapes")
     op.drop_table("current_stop_times")
