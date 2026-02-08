@@ -51,7 +51,7 @@ class TestComputeServiceDate:
             (datetime(2025, 1, 10, 14, 30, tzinfo=UTC), 52200, date(2025, 1, 10)),
             (datetime(2025, 1, 10, 1, 30, tzinfo=UTC), 91800, date(2025, 1, 9)),
             (datetime(2025, 1, 10, 0, 0, tzinfo=UTC), 86400, date(2025, 1, 9)),
-            (datetime(2025, 1, 10, 23, 59, 59, tzinfo=UTC), 86399, date(2025, 1, 10)),
+            (datetime(2025, 1, 10, 22, 59, 59, tzinfo=UTC), 86399, date(2025, 1, 10)),
         ],
     )
     def test_calculate_service_date(self, event_dt, scheduled_sec, expected_date):
