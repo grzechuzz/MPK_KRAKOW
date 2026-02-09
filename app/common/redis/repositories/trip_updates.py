@@ -35,6 +35,16 @@ class TripUpdatesRepository:
         existing = self.get(agency, trip_id)
         existing_stops = existing.stops if existing else {}
 
+        incoming_seqs = []
+        for stu in trip_update.stop_time_updates:
+            seq = stu.stop_sequence or stop_id_to_seq.get(stu.stop_id)
+            if seq is not None:
+                incoming_seqs.append(seq)
+
+        incoming_min_seq = min(incoming_seqs) if incoming_seqs else None
+        prev_min_seq = existing.last_min_seq if existing else None
+        vehicle_moved = incoming_min_seq is not None and prev_min_seq is not None and incoming_min_seq > prev_min_seq
+
         new_stops: dict[int, CachedStopTime] = dict(existing_stops)
 
         for stu in trip_update.stop_time_updates:
@@ -46,7 +56,7 @@ class TripUpdatesRepository:
             if arrival is None:
                 continue
 
-            if stop_seq in new_stops:
+            if stop_seq in new_stops and not vehicle_moved:
                 old = new_stops[stop_seq]
                 new_stops[stop_seq] = CachedStopTime(
                     stop_id=stu.stop_id,
@@ -67,6 +77,7 @@ class TripUpdatesRepository:
             trip_id=trip_id,
             stops=new_stops,
             created_at=existing.created_at if existing else now,
+            last_min_seq=incoming_min_seq or prev_min_seq,
         )
         self._redis.setex(key, TRIP_UPDATES_TTL, serializer.encode(cache))
 
