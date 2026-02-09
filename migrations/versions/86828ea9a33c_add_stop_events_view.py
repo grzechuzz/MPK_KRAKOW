@@ -21,7 +21,8 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.execute("""
                CREATE VIEW stop_events_view AS
-               SELECT id, agency, service_date, stop_sequence, line_number, stop_name, stop_desc, headsign,
+               SELECT id, agency, trip_id, service_date, stop_sequence, stop_id,
+                      line_number, stop_name, stop_desc, headsign,
                       planned_time AT TIME ZONE 'Europe/Warsaw' AS planned_time,
                       event_time AT TIME ZONE 'Europe/Warsaw' AS event_time,
                       delay_seconds, license_plate, detection_method, is_estimated,
