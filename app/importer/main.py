@@ -1,4 +1,5 @@
 import logging
+import shutil
 import time
 from pathlib import Path
 
@@ -13,6 +14,8 @@ from app.importer.load import load_gtfs_zip
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
+ARCHIVE_DIR = Path("data")
 
 
 def run_import() -> None:
@@ -37,6 +40,12 @@ def run_import() -> None:
                     logger.info(f"Skipping {agency_name} - hash unchanged")
                     Path(zip_path).unlink()
                     continue
+
+                ARCHIVE_DIR.mkdir(exist_ok=True)
+                archive_path = ARCHIVE_DIR / f"{new_hash}.zip"
+                if not archive_path.exists():
+                    shutil.copy2(zip_path, archive_path)
+                    logger.info(f"Archived {agency_name} as {new_hash[:16]}...zip")
 
                 logger.info(f"Loading {agency_name} into database...")
                 load_gtfs_zip(session, zip_path, feed_config.agency.value)
