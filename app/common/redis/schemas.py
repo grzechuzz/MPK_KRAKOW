@@ -29,3 +29,4 @@ class TripUpdateCache(msgspec.Struct):
     trip_id: str
     stops: dict[int, CachedStopTime] = msgspec.field(default_factory=dict)  # stop_sequence -> CachedStopTime
     created_at: datetime = msgspec.field(default_factory=lambda: datetime.now(UTC))
+    last_min_seq: int | None = None
