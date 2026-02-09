@@ -8,8 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def wait_for_gtfs_ready(
-        timeout: int = GTFS_READINESS_TIMEOUT,
-        poll_interval: int = GTFS_READINESS_POLL_INTERVAL
+    timeout: int = GTFS_READINESS_TIMEOUT, poll_interval: int = GTFS_READINESS_POLL_INTERVAL
 ) -> None:
     """Block until GTFS data is ready."""
     logger.info("Waiting for GTFS ready...")
