@@ -1,12 +1,17 @@
 from enum import StrEnum
+from typing import Annotated
 
 import msgspec
+from fastapi import Query
 
 
 class Period(StrEnum):
     TODAY = "today"
     WEEK = "week"
     MONTH = "month"
+
+
+PeriodQuery = Annotated[Period, Query(description="Data range filter")]
 
 
 class MaxDelayBetweenStops(msgspec.Struct):
