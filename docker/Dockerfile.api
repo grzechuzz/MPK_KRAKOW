@@ -1,0 +1,18 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml /app/pyproject.toml
+COPY app /app/app
+
+RUN pip install --no-cache-dir . && pip install --no-cache-dir uvicorn[standard] fastapi
+
+ENV PYTHONUNBUFFERED=1
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.api.main:mpk_app", "--host", "0.0.0.0", "--port", "8000"]
