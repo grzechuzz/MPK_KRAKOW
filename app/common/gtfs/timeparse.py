@@ -45,6 +45,8 @@ def compute_service_date(event_time: datetime, scheduled_seconds: int) -> date:
 
     if scheduled_seconds >= 86400:
         service_date = service_date - timedelta(days=1)
+    elif scheduled_seconds >= 79200 and local_time.hour < 3:
+        service_date = service_date - timedelta(days=1)
 
     return service_date
 
