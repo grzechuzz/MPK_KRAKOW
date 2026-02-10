@@ -1,12 +1,17 @@
 from enum import StrEnum
+from typing import Annotated
 
 import msgspec
+from fastapi import Query
 
 
 class Period(StrEnum):
     TODAY = "today"
     WEEK = "week"
     MONTH = "month"
+
+
+PeriodQuery = Annotated[Period, Query(description="Data range filter")]
 
 
 class MaxDelayBetweenStops(msgspec.Struct):
@@ -69,9 +74,9 @@ class LineSummaryResponse(msgspec.Struct):
 class PunctualityResponse(msgspec.Struct):
     """
     Thresholds:
-    - on_time: delay <= 180s (3 min)
-    - slightly_delayed: 180s < delay <= 480s (3-8 min)
-    - delayed: delay > 480s (8+ min)
+    - on_time: delay <= 120s (2 min)
+    - slightly_delayed: 120s < delay <= 360s (2-6 min)
+    - delayed: delay > 360s (6+ min)
     """
 
     line_number: str

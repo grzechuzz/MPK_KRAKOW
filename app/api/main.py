@@ -1,17 +1,11 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Any
 
-import msgspec
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
 
+from app.api.response import MsgspecJSONResponse
+from app.api.stats import router
 from app.common.db.connection import get_engine
-
-
-class MsgspecJSONResponse(JSONResponse):
-    def render(self, content: Any) -> bytes:
-        return msgspec.json.encode(content)
 
 
 @asynccontextmanager
@@ -29,6 +23,8 @@ def create_app() -> FastAPI:
         default_response_class=MsgspecJSONResponse,
         lifespan=lifespan,
     )
+
+    app.include_router(router, prefix="/api/v1")
 
     @app.get("/health")
     def health() -> dict[str, str]:
