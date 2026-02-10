@@ -218,7 +218,7 @@ class StatsRepository:
                     WHERE line_number = :line_number AND service_date BETWEEN :start_date AND :end_date
                     GROUP BY trip_id, service_date
                 )
-                SELECT e.service_date, ROUND(AVG(e.delay_seconds)::numeric, 1) AS avg_delay_seconds,
+                SELECT e.service_date as "date", ROUND(AVG(e.delay_seconds)::numeric, 1) AS avg_delay_seconds,
                 COUNT(DISTINCT (e.trip_id, e.service_date)) AS trips_count
                 FROM stop_events e
                 JOIN max_seqs m USING (trip_id, service_date)
