@@ -5,12 +5,11 @@ from datetime import datetime
 
 import redis
 
+from app.common.constants import VEHICLE_POSITIONS_CHANNEL
 from app.common.models.enums import Agency, VehicleStatus
 from app.common.models.gtfs_realtime import VehiclePosition
 
 logger = logging.getLogger(__name__)
-
-VEHICLE_POSITIONS_CHANNEL = "vehicle_positions"
 
 
 class Subscriber:

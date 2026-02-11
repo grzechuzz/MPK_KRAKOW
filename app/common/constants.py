@@ -8,6 +8,9 @@ REDIS_VEHICLE_STATE_TTL: int = 3 * 60 * 60  # 3h - last known vehicle state
 # Redis keys
 REDIS_KEY_GTFS_READY: str = "gtfs:ready"
 
+# Redis Pub/Sub channels
+VEHICLE_POSITIONS_CHANNEL: str = "vehicle_positions"
+
 # In-memory cache limits (detector + publisher)
 CACHE_MAX_TRIPS: int = 5000
 CACHE_MAX_STOPS: int = 5000

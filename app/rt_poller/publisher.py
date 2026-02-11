@@ -3,7 +3,7 @@ import logging
 
 import redis
 
-from app.common.constants import CACHE_MAX_STOP_ID_TO_SEQ
+from app.common.constants import CACHE_MAX_STOP_ID_TO_SEQ, VEHICLE_POSITIONS_CHANNEL
 from app.common.db.connection import get_session
 from app.common.db.repositories.gtfs_static import GtfsStaticRepository
 from app.common.feeds import FeedConfig
@@ -11,8 +11,6 @@ from app.common.gtfs.parser import parse_trip_updates, parse_vehicle_positions
 from app.common.redis.repositories.trip_updates import TripUpdatesRepository
 
 logger = logging.getLogger(__name__)
-
-VEHICLE_POSITIONS_CHANNEL = "vehicle_positions"
 
 
 class Publisher:

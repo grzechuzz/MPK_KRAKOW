@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
@@ -22,7 +22,7 @@ class BatchWriter:
         self._batch_size = batch_size
         self._flush_interval = flush_interval
         self._buffer: list[StopEvent] = []
-        self._last_flush = datetime.now()
+        self._last_flush = datetime.now(UTC)
 
     def add_many(self, events: list[StopEvent]) -> None:
         """
@@ -48,7 +48,7 @@ class BatchWriter:
             self._session.commit()
             logger.info(f"Wrote {count} stop events")
             self._buffer.clear()
-            self._last_flush = datetime.now()
+            self._last_flush = datetime.now(UTC)
             return count
         except Exception as e:
             logger.exception(f"Failed to write batch: {e}")
@@ -59,6 +59,6 @@ class BatchWriter:
     def _should_flush(self) -> bool:
         if len(self._buffer) >= self._batch_size:
             return True
-        if datetime.now() - self._last_flush > self._flush_interval:
+        if datetime.now(UTC) - self._last_flush > self._flush_interval:
             return True
         return False

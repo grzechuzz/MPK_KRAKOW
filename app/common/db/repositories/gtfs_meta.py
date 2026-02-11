@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
@@ -19,7 +19,7 @@ class GtfsMetaRepository:
 
         if meta:
             meta.current_hash = hash_value
-            meta.updated_at = datetime.now()
+            meta.updated_at = datetime.now(UTC)
         else:
             meta = GtfsMeta(agency=agency.value, current_hash=hash_value)
             self._session.add(meta)

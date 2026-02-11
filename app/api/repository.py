@@ -1,5 +1,6 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -9,7 +10,7 @@ from app.common.constants import MIN_DELAY_SECONDS
 
 def resolve_date_range(period: str) -> tuple[date, date]:
     """Convert period string to (start_date, end_date)"""
-    today = date.today()
+    today = datetime.now(ZoneInfo("Europe/Warsaw")).date()
     if period == "today":
         return today, today
     elif period == "week":
