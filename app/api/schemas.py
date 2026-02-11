@@ -44,6 +44,10 @@ class RouteDelay(msgspec.Struct):
     vehicle_number: str
     first_stop: str
     last_stop: str
+    first_planned_time: str
+    first_event_time: str
+    last_planned_time: str
+    last_event_time: str
     start_delay_seconds: int
     end_delay_seconds: int
     delay_generated_seconds: int

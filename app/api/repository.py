@@ -107,7 +107,7 @@ class StatsRepository:
                 ),
                 filtered AS (
                     SELECT e.trip_id, e.service_date, e.stop_sequence, e.stop_name, e.headsign, e.delay_seconds,
-                    e.line_number, e.license_plate
+                    e.line_number, e.license_plate, e.planned_time, e.event_time
                     FROM stop_events e
                     JOIN max_seqs m USING (trip_id, service_date)
                     WHERE e.line_number = :line_number AND e.service_date BETWEEN :start_date AND :end_date
@@ -116,25 +116,27 @@ class StatsRepository:
                 trip_bounds AS (
                     SELECT trip_id, service_date, headsign, line_number, license_plate,
                     FIRST_VALUE(stop_name) OVER w AS first_stop,
-                    LAST_VALUE(stop_name) OVER (
-                        PARTITION BY trip_id, service_date
-                        ORDER BY stop_sequence
-                        ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
-                    ) AS last_stop,
+                    LAST_VALUE(stop_name) OVER w_full AS last_stop,
+                    (FIRST_VALUE(planned_time) OVER w) AT TIME ZONE 'Europe/Warsaw' AS first_planned_time,
+                    (FIRST_VALUE(event_time) OVER w) AT TIME ZONE 'Europe/Warsaw' AS first_event_time,
+                    (LAST_VALUE(planned_time) OVER w_full) AT TIME ZONE 'Europe/Warsaw' AS last_planned_time,
+                    (LAST_VALUE(event_time) OVER w_full) AT TIME ZONE 'Europe/Warsaw' AS last_event_time,
                     FIRST_VALUE(delay_seconds) OVER w AS start_delay,
-                    LAST_VALUE(delay_seconds) OVER (
-                        PARTITION BY trip_id, service_date
-                        ORDER BY stop_sequence
-                        ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
-                    ) AS end_delay
+                    LAST_VALUE(delay_seconds) OVER w_full AS end_delay
                     FROM filtered
                     WINDOW w AS (
                         PARTITION BY trip_id, service_date
                         ORDER BY stop_sequence
+                    ),
+                    w_full AS (
+                        PARTITION BY trip_id, service_date
+                        ORDER BY stop_sequence
+                        ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
                     )
                 )
                 SELECT DISTINCT ON (trip_id, service_date) trip_id, service_date, line_number,
                 license_plate AS vehicle_number, first_stop, last_stop,
+                first_planned_time, first_event_time, last_planned_time, last_event_time,
                 start_delay AS start_delay_seconds, end_delay AS end_delay_seconds,
                 (end_delay - start_delay) AS delay_generated_seconds, headsign
                 FROM trip_bounds
