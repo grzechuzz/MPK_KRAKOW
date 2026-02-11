@@ -2,6 +2,7 @@ import json
 import logging
 
 import redis
+from cachetools import LRUCache
 
 from app.common.constants import CACHE_MAX_STOP_ID_TO_SEQ, VEHICLE_POSITIONS_CHANNEL
 from app.common.db.connection import get_session
@@ -19,7 +20,7 @@ class Publisher:
     def __init__(self, redis_client: redis.Redis):
         self._redis = redis_client
         self._trip_updates_repository = TripUpdatesRepository(redis_client)
-        self._stop_id_to_seq_cache: dict[str, dict[str, int]] = {}
+        self._stop_id_to_seq_cache: LRUCache[str, dict[str, int]] = LRUCache(maxsize=CACHE_MAX_STOP_ID_TO_SEQ)
 
     def publish_vehicle_positions(self, feed: FeedConfig, pb_data: bytes) -> int:
         """
@@ -61,9 +62,4 @@ class Publisher:
         """Get stop_id to stop_sequence mapping with caching."""
         if trip_id not in self._stop_id_to_seq_cache:
             self._stop_id_to_seq_cache[trip_id] = repo.build_stop_id_to_sequence_map(trip_id)
-
-            if len(self._stop_id_to_seq_cache) > CACHE_MAX_STOP_ID_TO_SEQ:
-                self._stop_id_to_seq_cache.clear()
-                self._stop_id_to_seq_cache[trip_id] = repo.build_stop_id_to_sequence_map(trip_id)
-
         return self._stop_id_to_seq_cache[trip_id]

@@ -14,6 +14,7 @@ Time selection:
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
+from cachetools import LRUCache
 from sqlalchemy.orm import Session
 
 from app.common.constants import CACHE_MAX_SEQUENCES, CACHE_MAX_STOP_TIMES, CACHE_MAX_STOPS, CACHE_MAX_TRIPS
@@ -50,10 +51,10 @@ class StopEventDetector:
         self._saved_seqs = redis_saved_seqs
 
         # caches (in mem)
-        self._trip_cache: dict[str, CurrentTrip] = {}
-        self._stop_cache: dict[str, CurrentStop] = {}
-        self._stop_times_cache: dict[str, dict[int, CurrentStopTime]] = {}
-        self._max_seq_cache: dict[str, int] = {}
+        self._trip_cache: LRUCache[str, CurrentTrip] = LRUCache(maxsize=CACHE_MAX_TRIPS)
+        self._stop_cache: LRUCache[str, CurrentStop] = LRUCache(maxsize=CACHE_MAX_STOPS)
+        self._stop_times_cache: LRUCache[str, dict[int, CurrentStopTime]] = LRUCache(maxsize=CACHE_MAX_STOP_TIMES)
+        self._max_seq_cache: LRUCache[str, int] = LRUCache(maxsize=CACHE_MAX_SEQUENCES)
 
     def process_update(self, vp: VehiclePosition) -> list[StopEvent]:
         """
@@ -271,8 +272,6 @@ class StopEventDetector:
             trip = self._static_repo.get_trip(trip_id)
             if trip:
                 self._trip_cache[trip_id] = trip
-                if len(self._trip_cache) > CACHE_MAX_TRIPS:
-                    self._trip_cache.clear()
         return self._trip_cache.get(trip_id)
 
     def _get_stop(self, stop_id: str) -> CurrentStop | None:
@@ -280,16 +279,12 @@ class StopEventDetector:
             stop = self._static_repo.get_stop(stop_id)
             if stop:
                 self._stop_cache[stop_id] = stop
-                if len(self._stop_cache) > CACHE_MAX_STOPS:
-                    self._stop_cache.clear()
         return self._stop_cache.get(stop_id)
 
     def _get_stop_time(self, trip_id: str, stop_sequence: int) -> CurrentStopTime | None:
         if trip_id not in self._stop_times_cache:
             stop_times = self._static_repo.get_stop_times_for_trip(trip_id)
             self._stop_times_cache[trip_id] = {st.stop_sequence: st for st in stop_times}
-            if len(self._stop_times_cache) > CACHE_MAX_STOP_TIMES:
-                self._stop_times_cache.clear()
         return self._stop_times_cache.get(trip_id, {}).get(stop_sequence)
 
     def _get_max_stop_sequence(self, trip_id: str) -> int | None:
@@ -297,6 +292,4 @@ class StopEventDetector:
             max_seq = self._static_repo.get_max_stop_sequence(trip_id)
             if max_seq:
                 self._max_seq_cache[trip_id] = max_seq
-                if len(self._max_seq_cache) > CACHE_MAX_SEQUENCES:
-                    self._max_seq_cache.clear()
         return self._max_seq_cache.get(trip_id)
