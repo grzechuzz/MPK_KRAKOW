@@ -4,6 +4,8 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.common.constants import MIN_DELAY_SECONDS
+
 
 def resolve_date_range(period: str) -> tuple[date, date]:
     """Convert period string to (start_date, end_date)"""
@@ -43,6 +45,7 @@ class StatsRepository:
                     SELECT trip_id, service_date, stop_sequence, stop_name, headsign, line_number, license_plate,
                     delay_seconds, planned_time, event_time,
                     delay_seconds - LAG(delay_seconds) OVER w AS generated_delay,
+                    LAG(delay_seconds) OVER w AS prev_delay,
                     LAG(stop_name) OVER w AS prev_stop_name,
                     LAG(stop_sequence) OVER w AS prev_stop_sequence,
                     LAG(planned_time) OVER w AS prev_planned_time,
@@ -61,6 +64,7 @@ class StatsRepository:
                 generated_delay AS delay_generated_seconds, headsign
                 FROM consecutive
                 WHERE generated_delay IS NOT NULL
+                  AND prev_delay >= :min_delay
                 ORDER BY generated_delay DESC
                 LIMIT 5
             """),
@@ -68,6 +72,7 @@ class StatsRepository:
                 "line_number": line_number,
                 "start_date": start_date,
                 "end_date": end_date,
+                "min_delay": MIN_DELAY_SECONDS,
             },
         )
         return [dict(r) for r in result.mappings().all()]
@@ -91,6 +96,7 @@ class StatsRepository:
         """
         Route delay = delay at second-to-last stop - delay at second stop.
         First and last stops excluded due to garbage data.
+        Trips where start_delay < MIN_DELAY_SECONDS are filtered.
         """
         result = self._session.execute(
             text("""
@@ -116,11 +122,11 @@ class StatsRepository:
                         ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
                     ) AS last_stop,
                     FIRST_VALUE(delay_seconds) OVER w AS start_delay,
-                        LAST_VALUE(delay_seconds) OVER (
-                            PARTITION BY trip_id, service_date
-                            ORDER BY stop_sequence
-                            ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
-                        ) AS end_delay
+                    LAST_VALUE(delay_seconds) OVER (
+                        PARTITION BY trip_id, service_date
+                        ORDER BY stop_sequence
+                        ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+                    ) AS end_delay
                     FROM filtered
                     WINDOW w AS (
                         PARTITION BY trip_id, service_date
@@ -130,13 +136,16 @@ class StatsRepository:
                 SELECT DISTINCT ON (trip_id, service_date) trip_id, service_date, line_number,
                 license_plate AS vehicle_number, first_stop, last_stop,
                 start_delay AS start_delay_seconds, end_delay AS end_delay_seconds,
-                (end_delay - start_delay) AS delay_generated_seconds, headsign FROM trip_bounds
+                (end_delay - start_delay) AS delay_generated_seconds, headsign
+                FROM trip_bounds
+                WHERE start_delay >= :min_delay
                 ORDER BY trip_id, service_date, delay_generated_seconds DESC
             """),
             {
                 "line_number": line_number,
                 "start_date": start_date,
                 "end_date": end_date,
+                "min_delay": MIN_DELAY_SECONDS,
             },
         )
         rows = [dict(r) for r in result.mappings().all()]
@@ -158,7 +167,11 @@ class StatsRepository:
                     e.delay_seconds - LAG(e.delay_seconds) OVER (
                         PARTITION BY e.trip_id, e.service_date
                         ORDER BY e.stop_sequence
-                    ) AS generated_delay
+                    ) AS generated_delay,
+                    LAG(e.delay_seconds) OVER (
+                        PARTITION BY e.trip_id, e.service_date
+                        ORDER BY e.stop_sequence
+                    ) AS prev_delay
                     FROM stop_events e
                     JOIN max_seqs m USING (trip_id, service_date)
                     WHERE e.service_date BETWEEN :start_date AND :end_date
@@ -166,12 +179,17 @@ class StatsRepository:
                 )
                 SELECT line_number, COUNT(DISTINCT (trip_id, service_date)) AS trips_count,
                 ROUND(AVG(delay_seconds)::numeric, 1) AS avg_delay_seconds, MAX(delay_seconds) AS max_delay_seconds,
-                COALESCE(MAX(generated_delay), 0) AS max_delay_between_stops_seconds
+                COALESCE(MAX(CASE WHEN prev_delay >= :min_delay THEN generated_delay END), 0)
+                    AS max_delay_between_stops_seconds
                 FROM per_stop
                 GROUP BY line_number
                 ORDER BY max_delay_seconds DESC
             """),
-            {"start_date": start_date, "end_date": end_date},
+            {
+                "start_date": start_date,
+                "end_date": end_date,
+                "min_delay": MIN_DELAY_SECONDS,
+            },
         )
         return [dict(r) for r in result.mappings().all()]
 
@@ -183,9 +201,9 @@ class StatsRepository:
         result = self._session.execute(
             text("""
                 WITH max_seqs AS (
-                SELECT trip_id, service_date, MAX(stop_sequence) AS max_seq FROM stop_events
-                WHERE line_number = :line_number AND service_date BETWEEN :start_date AND :end_date
-                GROUP BY trip_id, service_date
+                    SELECT trip_id, service_date, MAX(stop_sequence) AS max_seq FROM stop_events
+                    WHERE line_number = :line_number AND service_date BETWEEN :start_date AND :end_date
+                    GROUP BY trip_id, service_date
                 ),
                 trip_avg AS (
                     SELECT e.trip_id, e.service_date, AVG(e.delay_seconds) AS avg_delay
@@ -193,6 +211,7 @@ class StatsRepository:
                     JOIN max_seqs m USING (trip_id, service_date)
                     WHERE e.line_number = :line_number AND e.service_date BETWEEN :start_date AND :end_date
                     AND e.stop_sequence > 1 AND e.stop_sequence < m.max_seq
+                    AND e.delay_seconds >= :min_delay
                     GROUP BY e.trip_id, e.service_date
                 )
                 SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE avg_delay <= 120) AS on_time,
@@ -204,6 +223,7 @@ class StatsRepository:
                 "line_number": line_number,
                 "start_date": start_date,
                 "end_date": end_date,
+                "min_delay": MIN_DELAY_SECONDS,
             },
         )
         row = result.mappings().first()
@@ -218,12 +238,13 @@ class StatsRepository:
                     WHERE line_number = :line_number AND service_date BETWEEN :start_date AND :end_date
                     GROUP BY trip_id, service_date
                 )
-                SELECT e.service_date as "date", ROUND(AVG(e.delay_seconds)::numeric, 1) AS avg_delay_seconds,
+                SELECT e.service_date AS "date", ROUND(AVG(e.delay_seconds)::numeric, 1) AS avg_delay_seconds,
                 COUNT(DISTINCT (e.trip_id, e.service_date)) AS trips_count
                 FROM stop_events e
                 JOIN max_seqs m USING (trip_id, service_date)
                 WHERE e.line_number = :line_number AND e.service_date BETWEEN :start_date AND :end_date
                 AND e.stop_sequence > 1 AND e.stop_sequence < m.max_seq
+                AND e.delay_seconds >= :min_delay
                 GROUP BY e.service_date
                 ORDER BY e.service_date
             """),
@@ -231,6 +252,7 @@ class StatsRepository:
                 "line_number": line_number,
                 "start_date": start_date,
                 "end_date": end_date,
+                "min_delay": MIN_DELAY_SECONDS,
             },
         )
         return [dict(r) for r in result.mappings().all()]
