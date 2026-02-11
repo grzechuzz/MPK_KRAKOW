@@ -66,7 +66,7 @@ class StatsRepository:
                 WHERE generated_delay IS NOT NULL
                   AND prev_delay >= :min_delay
                 ORDER BY generated_delay DESC
-                LIMIT 5
+                LIMIT 10
             """),
             {
                 "line_number": line_number,
@@ -150,7 +150,7 @@ class StatsRepository:
         )
         rows = [dict(r) for r in result.mappings().all()]
         rows.sort(key=lambda r: r["delay_generated_seconds"], reverse=True)
-        return rows[:5]
+        return rows[:10]
 
     def lines_summary(self, start_date: date, end_date: date) -> list[dict[str, Any]]:
         """Summary stats for all lines: avg delay, max delay, max generated delay."""
