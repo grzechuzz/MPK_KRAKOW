@@ -105,7 +105,7 @@ class StatsService:
         result = PunctualityResponse(
             line_number=line_number,
             period=period.value,
-            total_trips=total,
+            total_stops=total,
             on_time_count=row["on_time"],
             on_time_percent=round(row["on_time"] / total * 100, 1) if total else 0.0,
             slightly_delayed_count=row["slightly_delayed"],
