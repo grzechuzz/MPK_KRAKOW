@@ -39,6 +39,9 @@ IMPORT_CYCLE_SLEEP: int = 3600  # 1 hour between GTFS static imports
 # Protobuf parsing
 PB_MIN_PAYLOAD_BYTES: int = 10  # minimum bytes to consider a .pb feed valid
 
+# Detector
+DELAY_DROP_THRESHOLD: int = 180  # if estimated delay is this much higher than the next STOPPED_AT delay then discard it
+
 # API statistics filters
 MIN_DELAY_SECONDS: int = -90  # stops with delay below this are treated as garbage data
 

@@ -11,6 +11,8 @@ class VehicleState(msgspec.Struct):
     trip_id: str
     current_stop_sequence: int
     last_timestamp: datetime
+    incoming_at_sequence: int | None = None
+    incoming_at_timestamp: datetime | None = None
 
 
 class CachedStopTime(msgspec.Struct):

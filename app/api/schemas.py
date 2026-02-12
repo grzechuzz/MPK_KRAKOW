@@ -85,7 +85,7 @@ class PunctualityResponse(msgspec.Struct):
 
     line_number: str
     period: str
-    total_trips: int
+    total_stops: int
     on_time_count: int
     on_time_percent: float
     slightly_delayed_count: int
