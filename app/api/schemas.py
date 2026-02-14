@@ -1,17 +1,11 @@
-from enum import StrEnum
+from datetime import date
 from typing import Annotated
 
 import msgspec
 from fastapi import Query
 
-
-class Period(StrEnum):
-    TODAY = "today"
-    WEEK = "week"
-    MONTH = "month"
-
-
-PeriodQuery = Annotated[Period, Query(description="Data range filter")]
+StartDateQuery = Annotated[date, Query(description="Start date (inclusive), e.g. 2026-02-01")]
+EndDateQuery = Annotated[date, Query(description="End date (inclusive), e.g. 2026-02-13")]
 
 
 class MaxDelayBetweenStops(msgspec.Struct):
@@ -62,19 +56,6 @@ class RouteDelayResponse(msgspec.Struct):
     trips_analyzed: int
 
 
-class LineSummary(msgspec.Struct):
-    line_number: str
-    trips_count: int
-    avg_delay_seconds: float
-    max_delay_seconds: int
-    max_delay_between_stops_seconds: int
-
-
-class LineSummaryResponse(msgspec.Struct):
-    period: str
-    lines: list[LineSummary]
-
-
 class PunctualityResponse(msgspec.Struct):
     """
     Thresholds:
@@ -104,3 +85,18 @@ class TrendResponse(msgspec.Struct):
     line_number: str
     period: str
     days: list[TrendDay]
+
+
+class LiveVehicle(msgspec.Struct):
+    license_plate: str
+    line_number: str
+    headsign: str
+    latitude: float
+    longitude: float
+    bearing: float | None
+    timestamp: str
+
+
+class LiveVehicleResponse(msgspec.Struct):
+    count: int
+    vehicles: list[LiveVehicle]
