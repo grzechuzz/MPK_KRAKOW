@@ -1,26 +1,10 @@
-from datetime import date, datetime, timedelta
+from datetime import date
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.common.constants import MIN_DELAY_SECONDS
-
-_TZ = ZoneInfo("Europe/Warsaw")
-
-
-def resolve_date_range(period: str) -> tuple[date, date]:
-    """Convert period string to (start_date, end_date)"""
-    today = datetime.now(_TZ).date()
-    if period == "today":
-        return today, today
-    elif period == "week":
-        start = today - timedelta(days=today.weekday())
-        return start, today
-    else:
-        start = today.replace(day=1)
-        return start, today
 
 
 class StatsRepository:
@@ -162,61 +146,6 @@ class StatsRepository:
         rows = [dict(r) for r in result.mappings().all()]
         rows.sort(key=lambda r: r["delay_generated_seconds"], reverse=True)
         return rows[:10]
-
-    def lines_summary(self, start_date: date, end_date: date) -> list[dict[str, Any]]:
-        """Summary stats for all lines: avg delay, max delay, max generated delay."""
-        result = self._session.execute(
-            text("""
-                WITH real_seqs AS (
-                    SELECT trip_id, MAX(stop_sequence) AS max_seq
-                    FROM current_stop_times
-                    GROUP BY trip_id
-                ),
-                per_stop AS (
-                    SELECT e.line_number, e.trip_id, e.service_date, e.stop_sequence,
-                    e.delay_seconds, e.license_plate, e.detection_method,
-                    e.delay_seconds - LAG(e.delay_seconds) OVER (
-                        PARTITION BY e.trip_id, e.service_date
-                        ORDER BY e.stop_sequence
-                    ) AS generated_delay,
-                    LAG(e.delay_seconds) OVER (
-                        PARTITION BY e.trip_id, e.service_date
-                        ORDER BY e.stop_sequence
-                    ) AS prev_delay,
-                    LAG(e.license_plate) OVER (
-                        PARTITION BY e.trip_id, e.service_date
-                        ORDER BY e.stop_sequence
-                    ) AS prev_license_plate,
-                    LAG(e.detection_method) OVER (
-                        PARTITION BY e.trip_id, e.service_date
-                        ORDER BY e.stop_sequence
-                    ) AS prev_detection_method
-                    FROM stop_events e
-                    JOIN real_seqs rs USING (trip_id)
-                    WHERE e.service_date BETWEEN :start_date AND :end_date
-                    AND e.stop_sequence > 1 AND e.stop_sequence < rs.max_seq
-                )
-                SELECT line_number, COUNT(DISTINCT (trip_id, service_date)) AS trips_count,
-                ROUND(AVG(delay_seconds)::numeric, 1) AS avg_delay_seconds,
-                MAX(delay_seconds) AS max_delay_seconds,
-                COALESCE(MAX(CASE
-                    WHEN prev_delay >= :min_delay
-                    AND license_plate = prev_license_plate
-                    AND detection_method != 2
-                    AND prev_detection_method != 2
-                    THEN generated_delay
-                END), 0) AS max_delay_between_stops_seconds
-                FROM per_stop
-                GROUP BY line_number
-                ORDER BY max_delay_seconds DESC
-            """),
-            {
-                "start_date": start_date,
-                "end_date": end_date,
-                "min_delay": MIN_DELAY_SECONDS,
-            },
-        )
-        return [dict(r) for r in result.mappings().all()]
 
     def punctuality(self, line_number: str, start_date: date, end_date: date) -> dict[str, Any]:
         """
