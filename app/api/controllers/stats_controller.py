@@ -28,6 +28,7 @@ Stats = Annotated[StatsService, Depends(_get_service)]
 
 @router.get(
     "/{line_number}/stats/max-delay",
+    response_model=None,
     responses=openapi_response(MaxDelayBetweenStopsResponse),
     summary="Max delay generated between consecutive stops",
 )
@@ -42,6 +43,7 @@ def get_max_delay_between_stops(
 
 @router.get(
     "/{line_number}/stats/route-delay",
+    response_model=None,
     responses=openapi_response(RouteDelayResponse),
     summary="Max delay generated across entire route",
 )
@@ -56,6 +58,7 @@ def get_route_delay(
 
 @router.get(
     "/{line_number}/stats/punctuality",
+    response_model=None,
     responses=openapi_response(PunctualityResponse),
     summary="Per-stop punctuality breakdown",
 )
@@ -69,7 +72,10 @@ def get_punctuality(
 
 
 @router.get(
-    "/{line_number}/stats/trend", responses=openapi_response(TrendResponse), summary="Daily average delay trend"
+    "/{line_number}/stats/trend",
+    response_model=None,
+    responses=openapi_response(TrendResponse),
+    summary="Daily average delay trend",
 )
 def get_trend(
     line_number: str,

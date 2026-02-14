@@ -19,7 +19,9 @@ def _get_service(db: DbSession) -> VehiclesService:
 Vehicles = Annotated[VehiclesService, Depends(_get_service)]
 
 
-@router.get("/positions", responses=openapi_response(LiveVehicleResponse), summary="Live vehicle positions")
+@router.get(
+    "/positions", response_model=None, responses=openapi_response(LiveVehicleResponse), summary="Live vehicle positions"
+)
 def get_positions(service: Vehicles) -> Response:
     """Returns all currently active vehicles (MPK + Mobilis) with GPS coordinates, line number, and headsign."""
     return Response(content=service.get_live_vehicles(), media_type=JSON)
