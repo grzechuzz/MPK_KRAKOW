@@ -46,9 +46,8 @@ DELAY_DROP_THRESHOLD: int = 180  # if estimated delay is this much higher than t
 MIN_DELAY_SECONDS: int = -90  # stops with delay below this are treated as garbage data
 
 # API cache TTL
-CACHE_TTL_TODAY: int = 120
-CACHE_TTL_WEEK: int = 300
-CACHE_TTL_MONTH: int = 900
+DEFAULT_TTL: int = 90
+LONG_TTL: int = 600
 
 # User agent
 USER_AGENT = "MPK-Krakow-Stats/0.1"
