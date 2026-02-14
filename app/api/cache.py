@@ -1,36 +1,34 @@
+from datetime import date
+
 import msgspec
 import redis
 
-from app.api.schemas import Period
-from app.common.constants import CACHE_TTL_MONTH, CACHE_TTL_TODAY, CACHE_TTL_WEEK
+from app.common.constants import DEFAULT_TTL, LONG_TTL
 from app.common.redis.connection import get_client
 
-_TTL: dict[Period, int] = {
-    Period.TODAY: CACHE_TTL_TODAY,
-    Period.WEEK: CACHE_TTL_WEEK,
-    Period.MONTH: CACHE_TTL_MONTH,
-}
+
+def _ttl(start_date: date, end_date: date) -> int:
+    span = (end_date - start_date).days
+    return LONG_TTL if span >= 7 else DEFAULT_TTL
 
 
-def _key(endpoint: str, period: Period, line_number: str = "") -> str:
-    if line_number:
-        return f"stats:{endpoint}:{line_number}:{period.value}"
-    return f"stats:{endpoint}:{period.value}"
+def _key(endpoint: str, line_number: str, start_date: date, end_date: date) -> str:
+    return f"stats:{endpoint}:{line_number}:{start_date}:{end_date}"
 
 
-def get_cached(endpoint: str, period: Period, line_number: str = "") -> bytes | None:
+def get_cached(endpoint: str, line_number: str, start_date: date, end_date: date) -> bytes | None:
     try:
         client = get_client()
-        return client.get(_key(endpoint, period, line_number))  # type: ignore
+        return client.get(_key(endpoint, line_number, start_date, end_date))  # type: ignore
     except redis.RedisError:
         return None
 
 
-def set_cached(endpoint: str, period: Period, data: msgspec.Struct, line_number: str = "") -> bytes:
+def set_cached(endpoint: str, line_number: str, start_date: date, end_date: date, data: msgspec.Struct) -> bytes:
     raw = msgspec.json.encode(data)
     try:
         client = get_client()
-        client.setex(_key(endpoint, period, line_number), _TTL[period], raw)
+        client.setex(_key(endpoint, line_number, start_date, end_date), _ttl(start_date, end_date), raw)
     except redis.RedisError:
         pass
     return raw
