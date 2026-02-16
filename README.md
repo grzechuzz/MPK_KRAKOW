@@ -1,3 +1,5 @@
+### [🇬🇧 English Version](README_EN.md)
+
 # KRKtransit - statystyki opóźnień autobusów komunikacji miejskiej w Krakowie
 
 REST API dostarczające statystyki opóźnień autobusów (MPK, Mobilis) w Krakowie w czasie rzeczywistym. Bazuje ono na danych dostarczanych przez ZTP w Krakowie, udostępnionych zgodnie ze specyfikacją GTFS (Static & Realtime). 
