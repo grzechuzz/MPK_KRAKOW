@@ -27,6 +27,7 @@ class VehiclesService:
 
             vehicles.append(
                 LiveVehicle(
+                    trip_id=vp.trip_id,
                     license_plate=vp.license_plate,
                     line_number=line_number,
                     headsign=headsign,
