@@ -38,11 +38,14 @@ class CurrentRoute(Base):
 
     trips: Mapped[list["CurrentTrip"]] = relationship(back_populates="route")
 
+    __table_args__ = (Index("idx_current_routes_agency", "agency_id"),)
+
 
 class CurrentStop(Base):
     __tablename__ = "current_stops"
 
     stop_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    agency_id: Mapped[str] = mapped_column(Text, nullable=False)
     stop_name: Mapped[str] = mapped_column(Text, nullable=False)
     stop_code: Mapped[str | None] = mapped_column(Text, nullable=True)
     stop_desc: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -51,12 +54,15 @@ class CurrentStop(Base):
 
     stop_times: Mapped[list["CurrentStopTime"]] = relationship(back_populates="stop")
 
+    __table_args__ = (Index("idx_current_stops_agency", "agency_id"),)
+
 
 class CurrentTrip(Base):
     __tablename__ = "current_trips"
 
     trip_id: Mapped[str] = mapped_column(Text, primary_key=True)
     route_id: Mapped[str] = mapped_column(Text, ForeignKey("current_routes.route_id"), nullable=False)
+    agency_id: Mapped[str] = mapped_column(Text, nullable=False)
     service_id: Mapped[str] = mapped_column(Text, nullable=False)
     direction_id: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
     headsign: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -68,6 +74,7 @@ class CurrentTrip(Base):
     __table_args__ = (
         Index("idx_current_trips_route", "route_id"),
         Index("idx_current_trips_shape", "shape_id"),
+        Index("idx_current_trips_agency", "agency_id"),
     )
 
 
@@ -77,13 +84,17 @@ class CurrentStopTime(Base):
     trip_id: Mapped[str] = mapped_column(Text, ForeignKey("current_trips.trip_id"), primary_key=True)
     stop_sequence: Mapped[int] = mapped_column(Integer, primary_key=True)
     stop_id: Mapped[str] = mapped_column(Text, ForeignKey("current_stops.stop_id"), nullable=False)
+    agency_id: Mapped[str] = mapped_column(Text, nullable=False)
     arrival_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
     departure_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     trip: Mapped["CurrentTrip"] = relationship(back_populates="stop_times")
     stop: Mapped["CurrentStop"] = relationship(back_populates="stop_times")
 
-    __table_args__ = (Index("idx_current_stop_times_stop", "stop_id"),)
+    __table_args__ = (
+        Index("idx_current_stop_times_stop", "stop_id"),
+        Index("idx_current_stop_times_agency", "agency_id"),
+    )
 
 
 class CurrentShape(Base):
@@ -95,6 +106,8 @@ class CurrentShape(Base):
     shape_pt_lat: Mapped[float] = mapped_column(Double, nullable=False)
     shape_pt_lon: Mapped[float] = mapped_column(Double, nullable=False)
     shape_pt_sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    __table_args__ = (Index("idx_current_shapes_agency", "agency_id"),)
 
 
 class StopEventModel(Base):
