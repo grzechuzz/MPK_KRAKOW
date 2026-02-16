@@ -218,50 +218,84 @@ class LiveVehicleResponse(BaseModel):
                 "count": 5,
                 "vehicles": [
                     {
+                        "trip_id": "block_675_trip_13_service_2",
                         "license_plate": "DN007",
                         "line_number": "179",
                         "headsign": "Dworzec Główny Zachód",
+                        "shape_id": "shape_1234",
                         "latitude": 50.06734085083008,
                         "longitude": 19.944305419921875,
                         "bearing": 90,
                         "timestamp": "2026-02-15T17:07:00+00:00",
                     },
                     {
+                        "trip_id": "block_622_trip_13_service_3",
                         "license_plate": "DN011",
                         "line_number": "164",
                         "headsign": "Piaski Nowe",
+                        "shape_id": "shape_9024",
                         "latitude": 50.081119537353516,
                         "longitude": 19.874757766723633,
                         "bearing": 90,
                         "timestamp": "2026-02-15T17:07:02+00:00",
                     },
                     {
+                        "trip_id": "block_635_trip_11_service_2",
                         "license_plate": "DN013",
                         "line_number": "503",
                         "headsign": "Nowy Bieżanów Południe",
+                        "shape_id": "shape_8882",
                         "latitude": 50.01777648925781,
                         "longitude": 19.990068435668945,
                         "bearing": 135,
                         "timestamp": "2026-02-15T17:06:56+00:00",
                     },
                     {
+                        "trip_id": "block_230_trip_4_service_3",
                         "license_plate": "DN017",
                         "line_number": "179",
                         "headsign": "Os. Kurdwanów",
+                        "shape_id": "shape_7234",
                         "latitude": 50.00454330444336,
                         "longitude": 19.959930419921875,
                         "bearing": 90,
                         "timestamp": "2026-02-15T17:06:57+00:00",
                     },
                     {
+                        "trip_id": "block_781_trip_14_service_2",
                         "license_plate": "DN021",
                         "line_number": "503",
                         "headsign": "Górka Narodowa P+R",
+                        "shape_id": "shape_6254",
                         "latitude": 50.05740737915039,
                         "longitude": 19.926631927490234,
                         "bearing": 0,
                         "timestamp": "2026-02-15T17:06:53+00:00",
                     },
+                ],
+            }
+        }
+    )
+
+
+class ShapePoint(BaseModel):
+    latitude: float
+    longitude: float
+    sequence: int
+
+
+class ShapeResponse(BaseModel):
+    shape_id: str
+    points: list[ShapePoint]
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "shape_id": "shape_8882",
+                "points": [
+                    {"latitude": 50.061433, "longitude": 19.936586, "sequence": 1},
+                    {"latitude": 50.061571, "longitude": 19.937014, "sequence": 2},
+                    {"latitude": 50.061984, "longitude": 19.938119, "sequence": 3},
                 ],
             }
         }
