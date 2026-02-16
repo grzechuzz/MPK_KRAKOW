@@ -23,11 +23,15 @@ class VehiclesService:
             if not info:
                 continue
 
+            line_number, headsign, shape_id = info
+
             vehicles.append(
                 LiveVehicle(
+                    trip_id=vp.trip_id,
                     license_plate=vp.license_plate,
-                    line_number=info[0],
-                    headsign=info[1],
+                    line_number=line_number,
+                    headsign=headsign,
+                    shape_id=shape_id,
                     latitude=vp.latitude,  # type: ignore[arg-type]
                     longitude=vp.longitude,  # type: ignore[arg-type]
                     bearing=vp.bearing,

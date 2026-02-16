@@ -92,9 +92,11 @@ class TrendResponse(msgspec.Struct):
 
 
 class LiveVehicle(msgspec.Struct):
+    trip_id: str
     license_plate: str
     line_number: str
     headsign: str
+    shape_id: str | None
     latitude: float
     longitude: float
     bearing: float | None
@@ -104,3 +106,14 @@ class LiveVehicle(msgspec.Struct):
 class LiveVehicleResponse(msgspec.Struct):
     count: int
     vehicles: list[LiveVehicle]
+
+
+class ShapePoint(msgspec.Struct):
+    latitude: float
+    longitude: float
+    sequence: int
+
+
+class ShapeResponse(msgspec.Struct):
+    shape_id: str
+    points: list[ShapePoint]

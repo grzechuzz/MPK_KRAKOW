@@ -107,7 +107,10 @@ class CurrentShape(Base):
     shape_pt_lon: Mapped[float] = mapped_column(Double, nullable=False)
     shape_pt_sequence: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    __table_args__ = (Index("idx_current_shapes_agency", "agency_id"),)
+    __table_args__ = (
+        Index("idx_current_shapes_agency", "agency_id"),
+        Index("idx_current_shapes_shape_seq", "shape_id", "shape_pt_sequence"),
+    )
 
 
 class StopEventModel(Base):

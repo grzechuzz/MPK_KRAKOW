@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.api.controllers.shapes_controller import router as shapes_router
 from app.api.controllers.stats_controller import router as stats_router
 from app.api.controllers.vehicles_controller import router as vehicles_router
 from app.api.exceptions import setup_exception_handlers
@@ -20,7 +21,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="MPK Kraków stats API",
+        title="KRKtransit API",
         version="0.1.0",
         description="Public API for Kraków public transport delay statistics",
         default_response_class=MsgspecJSONResponse,
@@ -32,6 +33,7 @@ def create_app() -> FastAPI:
 
     app.include_router(stats_router, prefix="/v1")
     app.include_router(vehicles_router, prefix="/v1")
+    app.include_router(shapes_router, prefix="/v1")
 
     return app
 
