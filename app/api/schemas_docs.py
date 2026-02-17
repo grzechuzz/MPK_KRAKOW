@@ -42,9 +42,11 @@ class TrendDay(BaseModel):
 
 
 class LiveVehicle(BaseModel):
+    trip_id: str
     license_plate: str
     line_number: str
     headsign: str
+    shape_id: str | None
     latitude: float
     longitude: float
     bearing: float | None
