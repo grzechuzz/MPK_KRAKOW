@@ -46,6 +46,7 @@ class BatchWriter:
         try:
             count = self._repo.insert_batch(self._buffer)
             self._session.commit()
+            self._session.expire_all()
             logger.info(f"Wrote {count} stop events")
             self._buffer.clear()
             self._last_flush = datetime.now(UTC)
@@ -53,6 +54,7 @@ class BatchWriter:
         except Exception as e:
             logger.exception(f"Failed to write batch: {e}")
             self._session.rollback()
+            self._session.expire_all()
             self._buffer.clear()
             return 0
 
