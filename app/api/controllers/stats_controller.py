@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Response
 
 from app.api import schemas_docs as docs
 from app.api.db import DbSession
-from app.api.schemas import EndDateQuery, StartDateQuery
+from app.api.schemas import EndDateQuery, LineNumberPath, StartDateQuery
 from app.api.services.stats_service import StatsService
 from app.api.validation import validate_date_range
 
@@ -26,7 +26,7 @@ Stats = Annotated[StatsService, Depends(_get_service)]
     summary="Top 10 delays between consecutive stops",
 )
 def get_max_delay_between_stops(
-    line_number: str,
+    line_number: LineNumberPath,
     service: Stats,
     start_date: StartDateQuery,
     end_date: EndDateQuery,
@@ -53,7 +53,7 @@ def get_max_delay_between_stops(
     summary="Top 10 delays generated across entire route",
 )
 def get_route_delay(
-    line_number: str,
+    line_number: LineNumberPath,
     service: Stats,
     start_date: StartDateQuery,
     end_date: EndDateQuery,
@@ -81,7 +81,7 @@ def get_route_delay(
     summary="Per-stop punctuality breakdown",
 )
 def get_punctuality(
-    line_number: str,
+    line_number: LineNumberPath,
     service: Stats,
     start_date: StartDateQuery,
     end_date: EndDateQuery,
@@ -113,7 +113,7 @@ def get_punctuality(
     summary="Daily average delay trend",
 )
 def get_trend(
-    line_number: str,
+    line_number: LineNumberPath,
     service: Stats,
     start_date: StartDateQuery,
     end_date: EndDateQuery,

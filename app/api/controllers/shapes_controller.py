@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.api import schemas_docs as docs
 from app.api.db import DbSession
+from app.api.schemas import ShapeIdPath
 from app.api.services.shapes_service import ShapesService
 
 router = APIRouter(prefix="/shapes", tags=["shapes"])
@@ -19,7 +20,7 @@ Shapes = Annotated[ShapesService, Depends(_get_service)]
 
 
 @router.get("/{shape_id}", response_model=docs.ShapeResponse, summary="Get route geometry")
-def get_shape(shape_id: str, service: Shapes) -> Response:
+def get_shape(shape_id: ShapeIdPath, service: Shapes) -> Response:
     """
     Returns the ordered list of GPS points that define a trip's route geometry.
 
