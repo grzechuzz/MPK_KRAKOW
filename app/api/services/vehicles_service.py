@@ -1,7 +1,7 @@
 import msgspec
 from sqlalchemy.orm import Session
 
-from app.api.repositories.vehicles_repository import fetch_all_positions
+from app.api.repositories.vehicles_repository import VehiclesRepository
 from app.api.schemas import LiveVehicle, LiveVehicleResponse
 from app.common.db.repositories.gtfs_static import GtfsStaticRepository
 
@@ -9,9 +9,10 @@ from app.common.db.repositories.gtfs_static import GtfsStaticRepository
 class VehiclesService:
     def __init__(self, db: Session):
         self._static_repo = GtfsStaticRepository(db)
+        self._vehicles_repo = VehiclesRepository()
 
     def get_live_vehicles(self) -> bytes:
-        positions = fetch_all_positions()
+        positions = self._vehicles_repo.fetch_all_positions()
         trip_info = self._static_repo.get_all_trip_info()
 
         vehicles: list[LiveVehicle] = []
