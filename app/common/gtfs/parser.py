@@ -48,8 +48,8 @@ def parse_vehicle_positions(pb_data: bytes, agency: Agency) -> list[VehiclePosit
         longitude = None
         bearing = None
         if v.HasField("position"):
-            latitude = v.position.latitude or None
-            longitude = v.position.longitude or None
+            latitude = v.position.latitude if v.position.HasField("latitude") else None
+            longitude = v.position.longitude if v.position.HasField("longitude") else None
             bearing = v.position.bearing if v.position.HasField("bearing") else None
 
         stop_id = v.stop_id or None
