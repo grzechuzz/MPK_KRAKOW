@@ -2,8 +2,8 @@ import logging
 from datetime import date
 
 import msgspec
-
 import redis
+
 from app.common.constants import (
     DEFAULT_TTL,
     LONG_TTL,
