@@ -1,6 +1,7 @@
 import msgspec
 from sqlalchemy.orm import Session
 
+from app.api.cache import get_vehicles_cache, set_vehicles_cache
 from app.api.repositories.vehicles_repository import VehiclesRepository
 from app.api.schemas import LiveVehicle, LiveVehicleResponse
 from app.common.db.repositories.gtfs_static import GtfsStaticRepository
@@ -12,6 +13,10 @@ class VehiclesService:
         self._vehicles_repo = VehiclesRepository()
 
     def get_live_vehicles(self) -> bytes:
+        cached = get_vehicles_cache()
+        if cached is not None:
+            return cached
+
         positions = self._vehicles_repo.fetch_all_positions()
         trip_info = self._static_repo.get_all_trip_info()
 
@@ -40,4 +45,6 @@ class VehiclesService:
                 )
             )
 
-        return msgspec.json.encode(LiveVehicleResponse(count=len(vehicles), vehicles=vehicles))
+        raw = msgspec.json.encode(LiveVehicleResponse(count=len(vehicles), vehicles=vehicles))
+        set_vehicles_cache(raw)
+        return raw

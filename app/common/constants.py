@@ -7,6 +7,7 @@ REDIS_VEHICLE_STATE_TTL: int = 3 * 60 * 60  # 3h - last known vehicle state
 
 # Redis keys
 REDIS_KEY_GTFS_READY: str = "gtfs:ready"
+REDIS_KEY_VEHICLES_CACHE: str = "cache:vehicles:positions"
 
 # Redis Pub/Sub channels
 VEHICLE_POSITIONS_CHANNEL: str = "vehicle_positions"
@@ -49,9 +50,11 @@ MIN_DELAY_SECONDS: int = -90  # stops with delay below this are treated as garba
 # API cache TTL
 DEFAULT_TTL: int = 90
 LONG_TTL: int = 600
+LONG_TTL_THRESHOLD_DAYS: int = 7
+VEHICLES_CACHE_TTL: int = 2  # seconds - live vehicle positions cache
 
 # API dates filter
-MAX_DATE_RANGE_DAYS = 365
+MAX_DATE_RANGE_DAYS: int = 365
 
 # User agent
-USER_AGENT = "MPK-Krakow-Stats/0.1"
+USER_AGENT: str = "MPK-Krakow-Stats/0.1"
