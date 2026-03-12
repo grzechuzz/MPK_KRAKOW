@@ -1,8 +1,8 @@
 import json
 import logging
 
-from cachetools import LRUCache
 import redis
+from cachetools import LRUCache
 
 from app.common.constants import CACHE_MAX_STOP_ID_TO_SEQ, VEHICLE_POSITIONS_CHANNEL
 from app.common.db.connection import get_session
