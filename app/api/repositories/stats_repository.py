@@ -79,7 +79,7 @@ class StatsRepository:
         return result.scalar() or 0
 
     def max_route_delay(self, line_number: str, start_date: date, end_date: date) -> list[dict[str, Any]]:
-        """Route delay = delay at second-to-last stop - delay at second stop."""
+        """Route delay = delay at second-to-last stop - delay at second stop. Uses only STOPPED_AT events."""
         result = self._session.execute(
             text("""
                 WITH filtered AS (
@@ -90,6 +90,7 @@ class StatsRepository:
                     WHERE e.line_number = :line_number AND e.service_date BETWEEN :start_date AND :end_date
                     AND e.stop_sequence > 1
                     AND e.stop_sequence < e.max_stop_sequence
+                    AND e.detection_method = 1
                 ),
                 trip_vehicle_check AS (
                     SELECT trip_id, service_date, COUNT(DISTINCT license_plate) AS vehicle_count
@@ -160,7 +161,7 @@ class StatsRepository:
         - slightly_delayed: 120s < delay <= 360s
         - delayed: delay > 360s
 
-        Excludes estimated stops (detection_method=2)!!!
+        Excludes estimated stops (detection_method != 1)
         """
         result = self._session.execute(
             text("""
@@ -173,7 +174,7 @@ class StatsRepository:
                 AND e.stop_sequence > 1
                 AND e.stop_sequence < e.max_stop_sequence
                 AND e.delay_seconds >= :min_delay
-                AND e.detection_method != 2
+                AND e.detection_method = 1
             """),
             {
                 "line_number": line_number,
