@@ -149,32 +149,14 @@ services:
       REDIS_USERNAME: ${REDIS_USER}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+    ports:
+      - "127.0.0.1:8000:8000"
     healthcheck:
       test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" ]
       interval: 30s
       timeout: 5s
       retries: 3
 
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    environment:
-      DOMAIN: ${DOMAIN:-localhost}
-    depends_on:
-      api:
-        condition: service_healthy
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "100m"
-        max-file: "1"
 
 secrets:
   db_password:
@@ -190,5 +172,3 @@ secrets:
 
 volumes:
   gtfs_pg:
-  caddy_data:
-  caddy_config:
