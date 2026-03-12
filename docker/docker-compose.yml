@@ -15,6 +15,23 @@ services:
       interval: 5s
       timeout: 3s
       retries: 30
+  
+  migrator:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.migrator
+    depends_on:
+      gtfs_db:
+        condition: service_healthy
+    secrets:
+      - db_password
+    environment:
+      DB_PASSWORD_FILE: /run/secrets/db_password
+      DB_HOST: gtfs_db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+    restart: "no"
 
   redis:
     image: redis:7-alpine
@@ -30,6 +47,8 @@ services:
     depends_on:
       gtfs_db:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     secrets:
       - db_password_importer
       - redis_password
@@ -58,6 +77,8 @@ services:
         condition: service_started
       gtfs_importer:
         condition: service_started
+      migrator:
+        condition: service_completed_successfully
     secrets:
       - db_password_api
       - redis_password
@@ -84,6 +105,8 @@ services:
         condition: service_started
       gtfs_importer:
         condition: service_started
+      migrator:
+        condition: service_completed_successfully
     secrets:
       - db_password_writer
       - redis_password
@@ -106,6 +129,8 @@ services:
     depends_on:
       gtfs_db:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     secrets:
       - db_password_api
       - redis_password
