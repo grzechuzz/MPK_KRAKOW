@@ -26,7 +26,7 @@ class Publisher:
         """
         Parse and publish vehicle positions to Redis Pub/Sub. Returns number of positions published.
         """
-        positions = parse_vehicle_positions(pb_data, feed.agency)
+        positions = parse_vehicle_positions(pb_data, feed)
 
         for pos in positions:
             message = {
@@ -47,7 +47,7 @@ class Publisher:
         """
         Parse and cache trip updates in Redis. Returns number of trip updates processed.
         """
-        updates = parse_trip_updates(pb_data, feed.agency)
+        updates = parse_trip_updates(pb_data, feed)
 
         with get_session() as session:
             static_repo = GtfsStaticRepository(session)

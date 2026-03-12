@@ -24,8 +24,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     app = FastAPI(
         title="KRKtransit API",
-        version="0.1.0",
-        description="Public API for Kraków public transport delay statistics",
+        version="1.0.0",
+        description="Public API for Kraków public transport delay statistics and live vehicles",
         default_response_class=MsgspecJSONResponse,
         lifespan=lifespan,
     )

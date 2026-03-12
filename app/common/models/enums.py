@@ -5,6 +5,7 @@ from typing import Self
 class Agency(StrEnum):
     MPK = "mpk"
     MOBILIS = "mobilis"
+    MPK_TRAM = "mpk_tram"
 
 
 class VehicleStatus(IntEnum):

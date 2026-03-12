@@ -4,28 +4,29 @@ from datetime import UTC, datetime
 from google.transit import gtfs_realtime_pb2
 
 from app.common.constants import PB_MIN_PAYLOAD_BYTES
-from app.common.models.enums import Agency, VehicleStatus
+from app.common.feeds import FeedConfig
+from app.common.models.enums import VehicleStatus
 from app.common.models.gtfs_realtime import StopTimeUpdate, TripUpdate, VehiclePosition
 
 logger = logging.getLogger(__name__)
 
 
-def parse_vehicle_positions(pb_data: bytes, agency: Agency) -> list[VehiclePosition]:
+def parse_vehicle_positions(pb_data: bytes, feed: FeedConfig) -> list[VehiclePosition]:
     """
     Parse vehicle positions from VehiclePositions.pb feed.
     """
     if not pb_data or len(pb_data) < PB_MIN_PAYLOAD_BYTES:
         return []
 
-    feed = gtfs_realtime_pb2.FeedMessage()
+    msg = gtfs_realtime_pb2.FeedMessage()
     try:
-        feed.ParseFromString(pb_data)
+        msg.ParseFromString(pb_data)
     except Exception:
         return []
 
     results: list[VehiclePosition] = []
 
-    for entity in feed.entity:
+    for entity in msg.entity:
         if not entity.HasField("vehicle"):
             continue
 
@@ -63,14 +64,14 @@ def parse_vehicle_positions(pb_data: bytes, agency: Agency) -> list[VehiclePosit
 
         results.append(
             VehiclePosition(
-                agency=agency,
-                trip_id=v.trip.trip_id,
+                agency=feed.agency,
+                trip_id=feed.prefix_id(v.trip.trip_id),
                 vehicle_id=vehicle_id or "",
                 license_plate=license_plate,
                 latitude=latitude,
                 longitude=longitude,
                 bearing=bearing,
-                stop_id=stop_id,
+                stop_id=feed.prefix_id(stop_id) if stop_id else None,
                 stop_sequence=stop_sequence,
                 status=status,
                 timestamp=timestamp,
@@ -80,28 +81,28 @@ def parse_vehicle_positions(pb_data: bytes, agency: Agency) -> list[VehiclePosit
     return results
 
 
-def parse_trip_updates(pb_data: bytes, agency: Agency) -> list[TripUpdate]:
+def parse_trip_updates(pb_data: bytes, feed: FeedConfig) -> list[TripUpdate]:
     """
     Parse trip updates from TripUpdates.pb feed.
     """
     if not pb_data or len(pb_data) < PB_MIN_PAYLOAD_BYTES:
-        logger.warning(f"TripUpdates {agency}: empty or too short ({len(pb_data) if pb_data else 0} bytes)")
+        logger.warning(f"TripUpdates {feed.agency}: empty or too short ({len(pb_data) if pb_data else 0} bytes)")
         return []
 
-    feed = gtfs_realtime_pb2.FeedMessage()
+    msg = gtfs_realtime_pb2.FeedMessage()
     try:
-        feed.ParseFromString(pb_data)
+        msg.ParseFromString(pb_data)
     except Exception as e:
         preview = pb_data[:50].hex() if pb_data else "None"
-        logger.warning(f"TripUpdates {agency}: parse failed, data preview: {preview}, error: {e}")
+        logger.warning(f"TripUpdates {feed.agency}: parse failed, data preview: {preview}, error: {e}")
         return []
 
-    feed_ts = feed.header.timestamp if feed.header.timestamp else None
+    feed_ts = msg.header.timestamp if msg.header.timestamp else None
     fallback_timestamp = datetime.fromtimestamp(feed_ts, tz=UTC) if feed_ts else datetime.now(UTC)
 
     results: list[TripUpdate] = []
 
-    for entity in feed.entity:
+    for entity in msg.entity:
         if not entity.HasField("trip_update"):
             continue
 
@@ -136,8 +137,8 @@ def parse_trip_updates(pb_data: bytes, agency: Agency) -> list[TripUpdate]:
 
             stop_time_updates.append(
                 StopTimeUpdate(
-                    stop_id=stop_id,
-                    stop_sequence=None,  # we'll get that from current_stop_times.txt
+                    stop_id=feed.prefix_id(stop_id),
+                    stop_sequence=None,
                     arrival_time=arrival_time,
                     departure_time=departure_time,
                 )
@@ -146,8 +147,8 @@ def parse_trip_updates(pb_data: bytes, agency: Agency) -> list[TripUpdate]:
         if stop_time_updates:
             results.append(
                 TripUpdate(
-                    agency=agency,
-                    trip_id=tu.trip.trip_id,
+                    agency=feed.agency,
+                    trip_id=feed.prefix_id(tu.trip.trip_id),
                     vehicle_id=vehicle_id,
                     timestamp=timestamp,
                     stop_time_updates=stop_time_updates,

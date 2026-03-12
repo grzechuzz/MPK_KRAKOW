@@ -22,7 +22,7 @@ class VehiclesRepository:
                 resp.raise_for_status()
                 if len(resp.content) < PB_MIN_PAYLOAD_BYTES:
                     continue
-                positions = parse_vehicle_positions(resp.content, feed.agency)
+                positions = parse_vehicle_positions(resp.content, feed)
                 all_positions.extend(positions)
             except Exception:
                 logger.warning(f"Failed to fetch positions for {feed.agency.value}", exc_info=True)
