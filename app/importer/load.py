@@ -10,6 +10,7 @@ from typing import Any
 from psycopg import sql
 from sqlalchemy.orm import Session
 
+from app.common.feeds import FeedConfig
 from app.common.gtfs.timeparse import parse_gtfs_time_to_seconds
 
 logger = logging.getLogger(__name__)
@@ -22,16 +23,16 @@ class TableMapping:
     gtfs_file: str
     table_name: str
     columns: list[str]
-    row_transformer: Callable[[dict[str, str], str], list[Any]]
+    row_transformer: Callable[[dict[str, str], str, Callable[[str], str]], list[Any]]
 
 
-def _routes_transformer(row: dict[str, str], agency_id: str) -> list[Any]:
-    return [row["route_id"], agency_id, row["route_short_name"]]
+def _routes_transformer(row: dict[str, str], agency_id: str, prefix: Callable[[str], str]) -> list[Any]:
+    return [prefix(row["route_id"]), agency_id, row["route_short_name"]]
 
 
-def _stops_transformer(row: dict[str, str], agency_id: str) -> list[Any]:
+def _stops_transformer(row: dict[str, str], agency_id: str, prefix: Callable[[str], str]) -> list[Any]:
     return [
-        row["stop_id"],
+        prefix(row["stop_id"]),
         agency_id,
         row["stop_name"],
         row["stop_code"],
@@ -41,31 +42,31 @@ def _stops_transformer(row: dict[str, str], agency_id: str) -> list[Any]:
     ]
 
 
-def _trips_transformer(row: dict[str, str], agency_id: str) -> list[Any]:
+def _trips_transformer(row: dict[str, str], agency_id: str, prefix: Callable[[str], str]) -> list[Any]:
     return [
-        row["trip_id"],
-        row["route_id"],
+        prefix(row["trip_id"]),
+        prefix(row["route_id"]),
         agency_id,
         row["service_id"],
         row["direction_id"],
         row["trip_headsign"],
-        row["shape_id"],
+        prefix(row["shape_id"]),
     ]
 
 
-def _stop_times_transformer(row: dict[str, str], agency_id: str) -> list[Any]:
+def _stop_times_transformer(row: dict[str, str], agency_id: str, prefix: Callable[[str], str]) -> list[Any]:
     return [
-        row["trip_id"],
+        prefix(row["trip_id"]),
         row["stop_sequence"],
-        row["stop_id"],
+        prefix(row["stop_id"]),
         agency_id,
         parse_gtfs_time_to_seconds(row["arrival_time"]),
         parse_gtfs_time_to_seconds(row["departure_time"]),
     ]
 
 
-def _shapes_transformer(row: dict[str, str], agency_id: str) -> list[Any]:
-    return [agency_id, row["shape_id"], row["shape_pt_lat"], row["shape_pt_lon"], row["shape_pt_sequence"]]
+def _shapes_transformer(row: dict[str, str], agency_id: str, prefix: Callable[[str], str]) -> list[Any]:
+    return [agency_id, prefix(row["shape_id"]), row["shape_pt_lat"], row["shape_pt_lon"], row["shape_pt_sequence"]]
 
 
 TABLE_MAPPINGS = [
@@ -140,7 +141,9 @@ def _copy_to_table(session: Session, table_name: str, columns: list[str], data: 
         copy.write(data.getvalue())
 
 
-def _load_table(session: Session, zf: zipfile.ZipFile, mapping: TableMapping, agency_id: str) -> None:
+def _load_table(
+    session: Session, zf: zipfile.ZipFile, mapping: TableMapping, agency_id: str, prefix: Callable[[str], str]
+) -> None:
     """Load a single GTFS file into its corresponding database table."""
     logger.info(f"[{agency_id}] Loading {mapping.gtfs_file}...")
 
@@ -150,19 +153,20 @@ def _load_table(session: Session, zf: zipfile.ZipFile, mapping: TableMapping, ag
     with zf.open(mapping.gtfs_file) as f:
         reader = csv.DictReader(line.decode("utf-8-sig") for line in f)
         for row in reader:
-            writer.writerow(mapping.row_transformer(row, agency_id))
+            writer.writerow(mapping.row_transformer(row, agency_id, prefix))
 
     _copy_to_table(session, mapping.table_name, mapping.columns, buf)
 
 
-def load_gtfs_zip(session: Session, zip_path: Path, agency_id: str) -> None:
+def load_gtfs_zip(session: Session, zip_path: Path, feed: FeedConfig) -> None:
     """Load GTFS static data."""
+    agency_id = feed.agency.value
     logger.info(f"[{agency_id}] Opening ZIP: {zip_path}")
 
     with zipfile.ZipFile(zip_path, "r") as zf:
         _delete_agency_data(session, agency_id)
 
         for mapping in TABLE_MAPPINGS:
-            _load_table(session, zf, mapping, agency_id)
+            _load_table(session, zf, mapping, agency_id, feed.prefix_id)
 
         logger.info(f"[{agency_id}] All data loaded, committing...")

@@ -48,7 +48,7 @@ def run_import() -> None:
                     logger.info(f"Archived {agency_name} as {new_hash[:16]}...zip")
 
                 logger.info(f"Loading {agency_name} into database...")
-                load_gtfs_zip(session, zip_path, feed_config.agency.value)
+                load_gtfs_zip(session, zip_path, feed_config)
                 meta_repo.set_current_hash(feed_config.agency, new_hash)
                 logger.info(f"Successfully imported {agency_name}")
 

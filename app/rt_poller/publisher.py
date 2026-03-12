@@ -1,8 +1,8 @@
 import json
 import logging
 
-import redis
 from cachetools import LRUCache
+import redis
 
 from app.common.constants import CACHE_MAX_STOP_ID_TO_SEQ, VEHICLE_POSITIONS_CHANNEL
 from app.common.db.connection import get_session
@@ -26,7 +26,7 @@ class Publisher:
         """
         Parse and publish vehicle positions to Redis Pub/Sub. Returns number of positions published.
         """
-        positions = parse_vehicle_positions(pb_data, feed.agency)
+        positions = parse_vehicle_positions(pb_data, feed)
 
         for pos in positions:
             message = {
@@ -47,7 +47,7 @@ class Publisher:
         """
         Parse and cache trip updates in Redis. Returns number of trip updates processed.
         """
-        updates = parse_trip_updates(pb_data, feed.agency)
+        updates = parse_trip_updates(pb_data, feed)
 
         with get_session() as session:
             static_repo = GtfsStaticRepository(session)
