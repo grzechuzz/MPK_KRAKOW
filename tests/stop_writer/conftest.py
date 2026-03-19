@@ -8,6 +8,7 @@ from app.common.models.enums import Agency, VehicleStatus
 from app.common.models.gtfs_realtime import VehiclePosition
 from app.common.redis.schemas import CachedStopTime, TripUpdateCache, VehicleState
 from app.stop_writer.detector import StopEventDetector
+from app.stop_writer.detector.gtfs_cache import GtfsCache
 
 
 def make_vehicle_position(
@@ -136,21 +137,21 @@ def mock_trip_updates(mocker: MockerFixture):
 def mock_saved_seqs(mocker: MockerFixture):
     mock = mocker.MagicMock()
     mock.is_saved.return_value = False
+    mock.get_saved_data.return_value = None
     return mock
 
 
 @pytest.fixture
 def detector(mocker: MockerFixture, mock_vehicle_state, mock_trip_updates, mock_saved_seqs):
-    mocker.patch.object(StopEventDetector, "_get_trip", return_value=make_trip())
-    mocker.patch.object(StopEventDetector, "_get_stop", return_value=make_stop())
+    mocker.patch.object(GtfsCache, "get_trip", return_value=make_trip())
+    mocker.patch.object(GtfsCache, "get_stop", return_value=make_stop())
     mocker.patch.object(
-        StopEventDetector,
-        "_get_stop_time",
+        GtfsCache,
+        "get_stop_time",
         side_effect=lambda tid, seq: make_stop_time(trip_id=tid, stop_sequence=seq),
     )
-    mocker.patch.object(StopEventDetector, "_get_max_stop_sequence", return_value=10)
-    mock_meta = mocker.patch("app.stop_writer.detector.GtfsMetaRepository")
-    mock_meta.return_value.get_current_hash.return_value = "abc123hash"
+    mocker.patch.object(GtfsCache, "get_max_stop_sequence", return_value=10)
+    mocker.patch.object(GtfsCache, "get_current_hash", return_value="abc123hash")
 
     return StopEventDetector(
         session=mocker.MagicMock(),

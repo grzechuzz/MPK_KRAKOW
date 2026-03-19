@@ -43,6 +43,7 @@ PB_MIN_PAYLOAD_BYTES: int = 10  # minimum bytes to consider a .pb feed valid
 
 # Detector
 DELAY_DROP_THRESHOLD: int = 180  # if estimated delay is this much higher than the next STOPPED_AT delay then discard it
+MIN_EARLY_DELAY_SECONDS: int = -180  # cross-batch: reject events earlier than this (except first stop)
 
 # API statistics filters
 MIN_DELAY_SECONDS: int = -90  # stops with delay below this are treated as garbage data
