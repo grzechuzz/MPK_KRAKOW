@@ -41,13 +41,13 @@ class EventValidator:
 
         return validated
 
-    def validate_event(
-        self, event: StopEvent, agency: str, trip_id: str, service_date: date
-    ) -> bool:
+    def validate_event(self, event: StopEvent, agency: str, trip_id: str, service_date: date) -> bool:
         if event.delay_seconds < MIN_EARLY_DELAY_SECONDS and event.stop_sequence != 1:
             logger.debug(
                 "Rejected event trip=%s seq=%d: delay %ds below threshold",
-                trip_id, event.stop_sequence, event.delay_seconds,
+                trip_id,
+                event.stop_sequence,
+                event.delay_seconds,
             )
             return False
 
@@ -64,14 +64,20 @@ class EventValidator:
         if prev_delay - event.delay_seconds > DELAY_DROP_THRESHOLD:
             logger.debug(
                 "Rejected event trip=%s seq=%d: delay drop %d -> %d",
-                trip_id, event.stop_sequence, prev_delay, event.delay_seconds,
+                trip_id,
+                event.stop_sequence,
+                prev_delay,
+                event.delay_seconds,
             )
             return False
 
         if prev_event_time >= event.event_time:
             logger.debug(
                 "Rejected event trip=%s seq=%d: non-increasing time %s >= %s",
-                trip_id, event.stop_sequence, prev_event_time, event.event_time,
+                trip_id,
+                event.stop_sequence,
+                prev_event_time,
+                event.event_time,
             )
             return False
 
