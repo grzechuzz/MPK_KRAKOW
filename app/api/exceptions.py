@@ -35,7 +35,10 @@ def setup_exception_handlers(app: FastAPI) -> None:
         status_code = _STATUS_MAP.get(type(exc), status.HTTP_500_INTERNAL_SERVER_ERROR)
         logger.warning(
             "Domain error: %s %s error_code=%s detail=%s",
-            request.method, request.url.path, exc.error_code, exc.message,
+            request.method,
+            request.url.path,
+            exc.error_code,
+            exc.message,
         )
         return _error_response(status_code, exc.error_code, exc.message)
 
