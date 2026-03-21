@@ -58,6 +58,11 @@ TripIdPath = Annotated[
 ]
 
 
+class ErrorResponse(msgspec.Struct):
+    error_code: str
+    message: str
+
+
 class MaxDelayBetweenStops(msgspec.Struct):
     trip_id: str
     line_number: str
