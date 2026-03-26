@@ -23,6 +23,7 @@ class Base(DeclarativeBase):
 
 class GtfsMeta(Base):
     __tablename__ = "gtfs_meta"
+    __table_args__ = {"schema": "gtfs_static"}
 
     agency: Mapped[str] = mapped_column(Text, primary_key=True)
     current_hash: Mapped[str] = mapped_column(Text, nullable=False)
@@ -38,7 +39,7 @@ class CurrentRoute(Base):
 
     trips: Mapped[list["CurrentTrip"]] = relationship(back_populates="route")
 
-    __table_args__ = (Index("idx_current_routes_agency", "agency_id"),)
+    __table_args__ = (Index("idx_current_routes_agency", "agency_id"), {"schema": "gtfs_static"})
 
 
 class CurrentStop(Base):
@@ -54,14 +55,14 @@ class CurrentStop(Base):
 
     stop_times: Mapped[list["CurrentStopTime"]] = relationship(back_populates="stop")
 
-    __table_args__ = (Index("idx_current_stops_agency", "agency_id"),)
+    __table_args__ = (Index("idx_current_stops_agency", "agency_id"), {"schema": "gtfs_static"})
 
 
 class CurrentTrip(Base):
     __tablename__ = "current_trips"
 
     trip_id: Mapped[str] = mapped_column(Text, primary_key=True)
-    route_id: Mapped[str] = mapped_column(Text, ForeignKey("current_routes.route_id"), nullable=False)
+    route_id: Mapped[str] = mapped_column(Text, ForeignKey("gtfs_static.current_routes.route_id"), nullable=False)
     agency_id: Mapped[str] = mapped_column(Text, nullable=False)
     service_id: Mapped[str] = mapped_column(Text, nullable=False)
     direction_id: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
@@ -75,15 +76,16 @@ class CurrentTrip(Base):
         Index("idx_current_trips_route", "route_id"),
         Index("idx_current_trips_shape", "shape_id"),
         Index("idx_current_trips_agency", "agency_id"),
+        {"schema": "gtfs_static"},
     )
 
 
 class CurrentStopTime(Base):
     __tablename__ = "current_stop_times"
 
-    trip_id: Mapped[str] = mapped_column(Text, ForeignKey("current_trips.trip_id"), primary_key=True)
+    trip_id: Mapped[str] = mapped_column(Text, ForeignKey("gtfs_static.current_trips.trip_id"), primary_key=True)
     stop_sequence: Mapped[int] = mapped_column(Integer, primary_key=True)
-    stop_id: Mapped[str] = mapped_column(Text, ForeignKey("current_stops.stop_id"), nullable=False)
+    stop_id: Mapped[str] = mapped_column(Text, ForeignKey("gtfs_static.current_stops.stop_id"), nullable=False)
     agency_id: Mapped[str] = mapped_column(Text, nullable=False)
     arrival_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
     departure_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -94,6 +96,7 @@ class CurrentStopTime(Base):
     __table_args__ = (
         Index("idx_current_stop_times_stop", "stop_id"),
         Index("idx_current_stop_times_agency", "agency_id"),
+        {"schema": "gtfs_static"},
     )
 
 
@@ -110,11 +113,13 @@ class CurrentShape(Base):
     __table_args__ = (
         Index("idx_current_shapes_agency", "agency_id"),
         Index("idx_current_shapes_shape_seq", "shape_id", "shape_pt_sequence"),
+        {"schema": "gtfs_static"},
     )
 
 
 class StopEventModel(Base):
     __tablename__ = "stop_events"
+    __table_args__ = {"schema": "events"}
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
     service_date: Mapped[date] = mapped_column(Date, primary_key=True)
