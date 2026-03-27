@@ -88,11 +88,15 @@ class StatsRepository:
                 ).label('generated_delay'),
                 func.lag(filtered.c.delay_seconds).over(partition_by=part_by, order_by=order_by).label('prev_delay'),
                 func.lag(filtered.c.stop_name).over(partition_by=part_by, order_by=order_by).label('prev_stop_name'),
-                func.lag(filtered.c.stop_sequence).over(partition_by=part_by, order_by=order_by).label('prev_stop_sequence'),
-                func.lag(filtered.c.planned_time).over(partition_by=part_by, order_by=order_by).label('prev_planned_time'),
+                func.lag(filtered.c.stop_sequence)
+                .over(partition_by=part_by, order_by=order_by).label('prev_stop_sequence'),
+                func.lag(filtered.c.planned_time)
+                .over(partition_by=part_by, order_by=order_by).label('prev_planned_time'),
                 func.lag(filtered.c.event_time).over(partition_by=part_by, order_by=order_by).label('prev_event_time'),
-                func.lag(filtered.c.license_plate).over(partition_by=part_by, order_by=order_by).label('prev_license_plate'),
-                func.lag(filtered.c.detection_method).over(partition_by=part_by, order_by=order_by).label('prev_detection_method'),
+                func.lag(filtered.c.license_plate)
+                .over(partition_by=part_by, order_by=order_by).label('prev_license_plate'),
+                func.lag(filtered.c.detection_method)
+                .over(partition_by=part_by, order_by=order_by).label('prev_detection_method'),
             )
             .cte('consecutive')
         )
