@@ -117,7 +117,7 @@ def _delete_agency_data(session: Session, agency_id: str) -> None:
 
     cursor = raw_conn.cursor()
     for table_name in _DELETE_ORDER:
-        stmt = sql.SQL("DELETE FROM {} WHERE agency_id = %s").format(sql.Identifier(table_name))
+        stmt = sql.SQL("DELETE FROM {} WHERE agency_id = %s").format(sql.Identifier("gtfs_static", table_name))
         cursor.execute(stmt, (agency_id,))
 
     logger.info(f"[{agency_id}] Delete complete")
@@ -133,7 +133,7 @@ def _copy_to_table(session: Session, table_name: str, columns: list[str], data: 
     data.seek(0)
 
     stmt = sql.SQL("COPY {} ({}) FROM STDIN WITH (FORMAT CSV)").format(
-        sql.Identifier(table_name),
+        sql.Identifier("gtfs_static", table_name),
         sql.SQL(", ").join(map(sql.Identifier, columns)),
     )
 
