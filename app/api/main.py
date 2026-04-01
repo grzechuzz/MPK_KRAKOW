@@ -14,8 +14,6 @@ from app.api.response import MsgspecJSONResponse
 from app.common.db.connection import get_engine
 from app.common.logging import setup_logging
 
-setup_logging()
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -25,6 +23,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 def create_app() -> FastAPI:
+    setup_logging()
     app = FastAPI(
         title="KRKtransit API",
         version="1.0.0",

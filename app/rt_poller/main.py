@@ -12,7 +12,6 @@ from app.rt_poller.circuit_breaker import CircuitBreaker
 from app.rt_poller.fetcher import fetch_trip_updates, fetch_vehicle_positions
 from app.rt_poller.publisher import Publisher
 
-setup_logging()
 logger = logging.getLogger(__name__)
 
 shutdown_event = Event()
@@ -61,6 +60,7 @@ def run_poller() -> None:
 
 
 def main() -> None:
+    setup_logging()
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
