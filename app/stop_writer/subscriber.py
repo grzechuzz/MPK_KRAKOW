@@ -1,4 +1,3 @@
-import json
 import logging
 from datetime import datetime
 
@@ -7,6 +6,7 @@ import redis
 from app.common.constants import SUBSCRIBER_TIMEOUT, VEHICLE_POSITIONS_CHANNEL
 from app.common.models.enums import Agency, VehicleStatus
 from app.common.models.gtfs_realtime import VehiclePosition
+from app.common.redis import serializer
 
 logger = logging.getLogger(__name__)
 
@@ -33,19 +33,19 @@ class Subscriber:
             return None
 
         try:
-            data = json.loads(message["data"])
+            msg = serializer.decode_vp_message(message["data"])
             return VehiclePosition(
-                agency=Agency(data["agency"]),
-                trip_id=data["trip_id"],
-                vehicle_id=data["vehicle_id"],
-                license_plate=data["license_plate"],
+                agency=Agency(msg.agency),
+                trip_id=msg.trip_id,
+                vehicle_id=msg.vehicle_id,
+                license_plate=msg.license_plate,
                 latitude=None,
                 longitude=None,
                 bearing=None,
-                stop_id=data["stop_id"],
-                stop_sequence=data["stop_sequence"],
-                status=VehicleStatus(data["status"]) if data["status"] else None,
-                timestamp=datetime.fromisoformat(data["timestamp"]),
+                stop_id=msg.stop_id,
+                stop_sequence=msg.stop_sequence,
+                status=VehicleStatus(msg.status) if msg.status is not None else None,
+                timestamp=datetime.fromisoformat(msg.timestamp),
             )
         except Exception as e:
             logger.exception(f"Failed to parse message: {e}")

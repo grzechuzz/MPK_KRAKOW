@@ -13,7 +13,6 @@ from app.common.redis.connection import get_client
 from app.importer.download import download_gtfs_zip
 from app.importer.load import load_gtfs_zip
 
-setup_logging()
 logger = logging.getLogger(__name__)
 
 ARCHIVE_DIR = Path("data")
@@ -61,6 +60,7 @@ def run_import() -> None:
 
 def main() -> None:
     """Run import every hour in a loop"""
+    setup_logging()
     logger.info("GTFS Importer started")
 
     while True:

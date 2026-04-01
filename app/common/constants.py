@@ -4,6 +4,7 @@ from datetime import date, timedelta
 REDIS_SAVED_SEQS_TTL: int = 24 * 60 * 60  # 24h - how long we remember which stop_sequences were already saved
 REDIS_TRIP_UPDATES_TTL: int = 3 * 60 * 60  # 3h - cached TripUpdate predictions
 REDIS_VEHICLE_STATE_TTL: int = 3 * 60 * 60  # 3h - last known vehicle state
+REDIS_LIVE_VEHICLE_TTL: int = 30  # 30s - stale if not refreshed by rt_poller
 
 # Redis keys
 REDIS_KEY_GTFS_READY: str = "gtfs:ready"

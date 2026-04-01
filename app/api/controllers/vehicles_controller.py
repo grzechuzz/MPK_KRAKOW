@@ -9,6 +9,7 @@ from app.api.repositories.vehicles_repository import VehiclesRepository
 from app.api.services.vehicles_service import VehiclesService
 from app.common.constants import RATE_LIMIT_DEFAULT
 from app.common.db.repositories.gtfs_static import GtfsStaticRepository
+from app.common.redis.connection import get_client
 
 router = APIRouter(prefix="/vehicles", tags=["live"])
 
@@ -16,7 +17,7 @@ JSON = "application/json"
 
 
 def _get_service(db: DbSession) -> VehiclesService:
-    return VehiclesService(GtfsStaticRepository(db), VehiclesRepository())
+    return VehiclesService(GtfsStaticRepository(db), VehiclesRepository(get_client()))
 
 
 Vehicles = Annotated[VehiclesService, Depends(_get_service)]

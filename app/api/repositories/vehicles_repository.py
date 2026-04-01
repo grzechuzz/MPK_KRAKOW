@@ -1,30 +1,14 @@
-import logging
+import redis
 
-import requests
-
-from app.common.constants import PB_MIN_PAYLOAD_BYTES, USER_AGENT
-from app.common.feeds import get_all_feed_configs
-from app.common.gtfs.parser import parse_vehicle_positions
-from app.common.models.gtfs_realtime import VehiclePosition
-
-logger = logging.getLogger(__name__)
+from app.common.redis.repositories.live_vehicles import LiveVehiclePositionRepository
+from app.common.redis.schemas import LiveVehiclePosition
 
 
 class VehiclesRepository:
-    """Fetches live vehicle positions from GTFS Realtime feeds."""
+    """Reads live vehicle positions from Redis cache populated by rt_poller."""
 
-    def fetch_all_positions(self) -> list[VehiclePosition]:
-        all_positions: list[VehiclePosition] = []
+    def __init__(self, redis_client: redis.Redis):
+        self._repo = LiveVehiclePositionRepository(redis_client)
 
-        for feed in get_all_feed_configs():
-            try:
-                resp = requests.get(feed.vehicle_positions_url, timeout=10, headers={"User-Agent": USER_AGENT})
-                resp.raise_for_status()
-                if len(resp.content) < PB_MIN_PAYLOAD_BYTES:
-                    continue
-                positions = parse_vehicle_positions(resp.content, feed)
-                all_positions.extend(positions)
-            except Exception:
-                logger.warning(f"Failed to fetch positions for {feed.agency.value}", exc_info=True)
-
-        return all_positions
+    def fetch_all_positions(self) -> list[LiveVehiclePosition]:
+        return self._repo.get_all()
