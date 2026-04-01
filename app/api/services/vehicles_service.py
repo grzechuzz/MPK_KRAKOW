@@ -20,11 +20,8 @@ class VehiclesService:
         trip_info = self._static_repo.get_all_trip_info()
 
         vehicles: list[LiveVehicle] = []
-        for vp in positions:
-            if not vp.has_position or not vp.license_plate:
-                continue
-
-            info = trip_info.get(vp.trip_id)
+        for pos in positions:
+            info = trip_info.get(pos.trip_id)
             if not info:
                 continue
 
@@ -32,15 +29,15 @@ class VehiclesService:
 
             vehicles.append(
                 LiveVehicle(
-                    trip_id=vp.trip_id,
-                    license_plate=vp.license_plate,
+                    trip_id=pos.trip_id,
+                    license_plate=pos.license_plate,
                     line_number=line_number,
                     headsign=headsign,
                     shape_id=shape_id,
-                    latitude=vp.latitude,  # type: ignore[arg-type]
-                    longitude=vp.longitude,  # type: ignore[arg-type]
-                    bearing=vp.bearing,
-                    timestamp=vp.timestamp.isoformat(),
+                    latitude=pos.latitude,
+                    longitude=pos.longitude,
+                    bearing=pos.bearing,
+                    timestamp=pos.timestamp.isoformat(),
                 )
             )
 
