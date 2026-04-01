@@ -1,15 +1,17 @@
-import json
 import logging
 
-import redis
 from cachetools import LRUCache
 
+import redis
 from app.common.constants import CACHE_MAX_STOP_ID_TO_SEQ, VEHICLE_POSITIONS_CHANNEL
 from app.common.db.connection import get_session
 from app.common.db.repositories.gtfs_static import GtfsStaticRepository
 from app.common.feeds import FeedConfig
 from app.common.gtfs.parser import parse_trip_updates, parse_vehicle_positions
+from app.common.redis import serializer
+from app.common.redis.repositories.live_vehicles import LiveVehiclePositionRepository
 from app.common.redis.repositories.trip_updates import TripUpdatesRepository
+from app.common.redis.schemas import LiveVehiclePosition, VehiclePositionMessage
 
 logger = logging.getLogger(__name__)
 
@@ -20,26 +22,40 @@ class Publisher:
     def __init__(self, redis_client: redis.Redis):
         self._redis = redis_client
         self._trip_updates_repository = TripUpdatesRepository(redis_client)
+        self._live_vehicles_repository = LiveVehiclePositionRepository(redis_client)
         self._stop_id_to_seq_cache: LRUCache[str, dict[str, int]] = LRUCache(maxsize=CACHE_MAX_STOP_ID_TO_SEQ)
 
     def publish_vehicle_positions(self, feed: FeedConfig, pb_data: bytes) -> int:
         """
         Parse and publish vehicle positions to Redis Pub/Sub. Returns number of positions published.
+        Also caches positions with coordinates in Redis for the vehicles API.
         """
         positions = parse_vehicle_positions(pb_data, feed)
 
         for pos in positions:
-            message = {
-                "agency": pos.agency.value,
-                "trip_id": pos.trip_id,
-                "vehicle_id": pos.vehicle_id,
-                "license_plate": pos.license_plate,
-                "stop_id": pos.stop_id,
-                "stop_sequence": pos.stop_sequence,
-                "status": pos.status.value if pos.status else None,
-                "timestamp": pos.timestamp.isoformat(),
-            }
-            self._redis.publish(VEHICLE_POSITIONS_CHANNEL, json.dumps(message))
+            message = VehiclePositionMessage(
+                agency=pos.agency.value,
+                trip_id=pos.trip_id,
+                vehicle_id=pos.vehicle_id,
+                license_plate=pos.license_plate,
+                stop_id=pos.stop_id,
+                stop_sequence=pos.stop_sequence,
+                status=pos.status.value if pos.status else None,
+                timestamp=pos.timestamp.isoformat(),
+            )
+            self._redis.publish(VEHICLE_POSITIONS_CHANNEL, serializer.encode_vp_message(message))
+
+            if pos.has_position and pos.license_plate:
+                live = LiveVehiclePosition(
+                    agency=pos.agency.value,
+                    license_plate=pos.license_plate,
+                    trip_id=pos.trip_id,
+                    latitude=pos.latitude,  # type: ignore[arg-type]
+                    longitude=pos.longitude,  # type: ignore[arg-type]
+                    bearing=pos.bearing,
+                    timestamp=pos.timestamp,
+                )
+                self._live_vehicles_repository.save(live)
 
         return len(positions)
 

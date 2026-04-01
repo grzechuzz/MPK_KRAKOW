@@ -3,6 +3,38 @@ from datetime import UTC, datetime
 import msgspec
 
 
+class VehiclePositionMessage(msgspec.Struct):
+    """Pub/Sub message published by rt_poller on vehicle_positions channel."""
+
+    agency: str
+    trip_id: str
+    vehicle_id: str
+    license_plate: str | None
+    stop_id: str | None
+    stop_sequence: int | None
+    status: int | None
+    timestamp: str  # ISO 8601
+
+
+class LiveVehiclePosition(msgspec.Struct):
+    """Live vehicle position cached by rt_poller in Redis."""
+
+    agency: str
+    license_plate: str
+    trip_id: str
+    latitude: float
+    longitude: float
+    bearing: float | None
+    timestamp: datetime
+
+
+class SavedSequenceData(msgspec.Struct):
+    """Value stored per stop_sequence in the saved_sequences Redis hash."""
+
+    delay: int
+    event_time: datetime
+
+
 class VehicleState(msgspec.Struct):
     """Current state of a tracked vehicle"""
 
