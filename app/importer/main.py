@@ -1,8 +1,11 @@
 import logging
 import shutil
-import time
+import signal
 from pathlib import Path
+from threading import Event
+from typing import Any
 
+from app.common.config import get_config
 from app.common.constants import IMPORT_CYCLE_SLEEP, REDIS_KEY_GTFS_READY
 from app.common.db.connection import get_session
 from app.common.db.repositories.gtfs_meta import GtfsMetaRepository
@@ -15,7 +18,12 @@ from app.importer.load import load_gtfs_zip
 
 logger = logging.getLogger(__name__)
 
-ARCHIVE_DIR = Path("data")
+shutdown_event = Event()
+
+
+def signal_handler(*args: Any) -> None:
+    logger.info("Shutdown signal received")
+    shutdown_event.set()
 
 
 def run_import() -> None:
@@ -41,8 +49,9 @@ def run_import() -> None:
                     Path(zip_path).unlink()
                     continue
 
-                ARCHIVE_DIR.mkdir(exist_ok=True)
-                archive_path = ARCHIVE_DIR / f"{new_hash}.zip"
+                archive_dir = get_config().data_dir
+                archive_dir.mkdir(exist_ok=True)
+                archive_path = archive_dir / f"{new_hash}.zip"
                 if not archive_path.exists():
                     shutil.copy2(zip_path, archive_path)
                     logger.info(f"Archived {agency_name} as {new_hash[:16]}...zip")
@@ -61,9 +70,11 @@ def run_import() -> None:
 def main() -> None:
     """Run import every hour in a loop"""
     setup_logging()
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
     logger.info("GTFS Importer started")
 
-    while True:
+    while not shutdown_event.is_set():
         try:
             run_import()
             get_client().set(REDIS_KEY_GTFS_READY, "1")
@@ -72,7 +83,9 @@ def main() -> None:
         except Exception as e:
             logger.exception(f"Import cycle failed: {e}")
 
-        time.sleep(IMPORT_CYCLE_SLEEP)
+        shutdown_event.wait(timeout=IMPORT_CYCLE_SLEEP)
+
+    logger.info("Importer shutdown complete")
 
 
 if __name__ == "__main__":
