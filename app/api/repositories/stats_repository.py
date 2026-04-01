@@ -277,7 +277,12 @@ class StatsRepository:
                 func.last_value(filtered.c.delay_seconds)
                 .over(partition_by=part_by, order_by=order_by, rows=(None, None))
                 .label("end_delay"),
-                filtered.c.is_estimated,
+                func.first_value(filtered.c.is_estimated)
+                .over(partition_by=part_by, order_by=order_by)
+                .label("start_is_estimated"),
+                func.last_value(filtered.c.is_estimated)
+                .over(partition_by=part_by, order_by=order_by, rows=(None, None))
+                .label("end_is_estimated"),
             )
             .join(vt, and_(filtered.c.trip_id == vt.c.trip_id, filtered.c.service_date == vt.c.service_date))
             .cte("trip_bounds")
@@ -302,9 +307,7 @@ class StatsRepository:
                 tb.c.end_delay.label("end_delay_seconds"),
                 delay_generated,
                 tb.c.headsign,
-                func.bool_or(tb.c.is_estimated)
-                .over(partition_by=[tb.c.trip_id, tb.c.service_date])
-                .label("is_estimated"),
+                or_(tb.c.start_is_estimated, tb.c.end_is_estimated).label("is_estimated"),
             )
             .distinct(tb.c.trip_id, tb.c.service_date)
             .where(tb.c.start_delay >= MIN_DELAY_SECONDS)

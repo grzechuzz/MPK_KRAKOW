@@ -2,9 +2,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, Response
 
-from app.api import schemas_docs as docs
 from app.api.db import DbSession
 from app.api.middleware import limiter
+from app.api.openapi import DOC_LIVE_VEHICLES
 from app.api.repositories.vehicles_repository import VehiclesRepository
 from app.api.services.vehicles_service import VehiclesService
 from app.common.constants import RATE_LIMIT_DEFAULT
@@ -23,7 +23,7 @@ def _get_service(db: DbSession) -> VehiclesService:
 Vehicles = Annotated[VehiclesService, Depends(_get_service)]
 
 
-@router.get("/positions", response_model=docs.LiveVehicleResponse, summary="Live vehicle positions")
+@router.get("/positions", openapi_extra=DOC_LIVE_VEHICLES, summary="Live vehicle positions")
 @limiter.limit(RATE_LIMIT_DEFAULT)
 def get_positions(request: Request, service: Vehicles) -> Response:
     """
