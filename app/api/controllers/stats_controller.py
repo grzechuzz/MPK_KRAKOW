@@ -2,9 +2,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, Response
 
-from app.api import schemas_docs as docs
 from app.api.db import DbSession
 from app.api.middleware import limiter
+from app.api.openapi import DOC_MAX_DELAY, DOC_PUNCTUALITY, DOC_ROUTE_DELAY, DOC_TREND
 from app.api.repositories.stats_repository import StatsRepository
 from app.api.schemas import EndDateQuery, IncludeEstimatedQuery, LineNumberPath, StartDateQuery
 from app.api.services.stats_service import StatsService
@@ -25,7 +25,7 @@ Stats = Annotated[StatsService, Depends(_get_service)]
 
 @router.get(
     "/{line_number}/stats/max-delay",
-    response_model=docs.MaxDelayBetweenStopsResponse,
+    openapi_extra=DOC_MAX_DELAY,
     summary="Top 10 delays between consecutive stops",
 )
 @limiter.limit(RATE_LIMIT_STATS)
@@ -58,7 +58,7 @@ def get_max_delay_between_stops(
 
 @router.get(
     "/{line_number}/stats/route-delay",
-    response_model=docs.RouteDelayResponse,
+    openapi_extra=DOC_ROUTE_DELAY,
     summary="Top 10 delays generated across entire route",
 )
 @limiter.limit(RATE_LIMIT_STATS)
@@ -92,7 +92,7 @@ def get_route_delay(
 
 @router.get(
     "/{line_number}/stats/punctuality",
-    response_model=docs.PunctualityResponse,
+    openapi_extra=DOC_PUNCTUALITY,
     summary="Per-stop punctuality breakdown",
 )
 @limiter.limit(RATE_LIMIT_STATS)
@@ -130,7 +130,7 @@ def get_punctuality(
 
 @router.get(
     "/{line_number}/stats/trend",
-    response_model=docs.TrendResponse,
+    openapi_extra=DOC_TREND,
     summary="Daily average delay trend",
 )
 @limiter.limit(RATE_LIMIT_STATS)

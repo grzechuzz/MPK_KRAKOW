@@ -10,6 +10,7 @@ from app.api.controllers.trips_controller import router as trips_router
 from app.api.controllers.vehicles_controller import router as vehicles_router
 from app.api.exceptions import setup_exception_handlers
 from app.api.middleware import setup_middleware
+from app.api.openapi import make_openapi_fn
 from app.api.response import MsgspecJSONResponse
 from app.common.db.connection import get_engine
 from app.common.logging import setup_logging
@@ -45,3 +46,4 @@ def create_app() -> FastAPI:
 
 
 mpk_app = create_app()
+mpk_app.openapi = make_openapi_fn(mpk_app)  # type: ignore[method-assign]

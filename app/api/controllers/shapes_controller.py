@@ -2,9 +2,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, Response
 
-from app.api import schemas_docs as docs
 from app.api.db import DbSession
 from app.api.middleware import limiter
+from app.api.openapi import DOC_SHAPE
 from app.api.schemas import ShapeIdPath
 from app.api.services.shapes_service import ShapesService
 from app.common.constants import RATE_LIMIT_DEFAULT
@@ -22,7 +22,7 @@ def _get_service(db: DbSession) -> ShapesService:
 Shapes = Annotated[ShapesService, Depends(_get_service)]
 
 
-@router.get("/{shape_id}", response_model=docs.ShapeResponse, summary="Get route geometry")
+@router.get("/{shape_id}", openapi_extra=DOC_SHAPE, summary="Get route geometry")
 @limiter.limit(RATE_LIMIT_DEFAULT)
 def get_shape(request: Request, shape_id: ShapeIdPath, service: Shapes) -> Response:
     """
