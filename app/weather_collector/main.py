@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 from app.common.constants import TIMEZONE, WEATHER_BACKFILL_DAYS, WEATHER_COLLECT_INTERVAL
 from app.common.db.connection import get_session
 from app.common.logging import setup_logging
-from app.common.sentry import setup_sentry
+from app.common.sentry import capture_exception, setup_sentry
 from app.weather_collector.fetcher import fetch_weather
 from app.weather_collector.repository import WeatherRepository
 
@@ -30,6 +30,14 @@ def _collect(past_days: int) -> None:
         logger.info("Stored %d new observations (fetched %d total, past_days=%d)", count, len(observations), past_days)
     except Exception as e:
         logger.exception("Failed to collect weather data: %s", e)
+        capture_exception(
+            e,
+            tags={
+                "component": "weather_collector",
+                "failure_scope": "collect",
+                "past_days": str(past_days),
+            },
+        )
 
 
 def _resolve_past_days() -> int:

@@ -1,8 +1,11 @@
 import logging
 import signal
+from collections.abc import Iterator
+from itertools import chain, repeat
 from threading import Event
 from typing import Any
 
+from app.common.constants import STOP_WRITER_FLUSH_RETRY_BACKOFF_SECONDS
 from app.common.db.connection import get_session
 from app.common.gtfs.readiness import wait_for_gtfs_ready
 from app.common.logging import setup_logging
@@ -10,10 +13,10 @@ from app.common.redis.connection import get_client
 from app.common.redis.repositories.saved_sequences import SavedSequencesRepository
 from app.common.redis.repositories.trip_updates import TripUpdatesRepository
 from app.common.redis.repositories.vehicle_state import VehicleStateRepository
-from app.common.sentry import setup_sentry
+from app.common.sentry import capture_exception, setup_sentry
 from app.stop_writer.detector import StopEventDetector
 from app.stop_writer.subscriber import Subscriber
-from app.stop_writer.writer import BatchWriter
+from app.stop_writer.writer import BatchWriteError, BatchWriter
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +26,43 @@ shutdown_event = Event()
 def signal_handler(*args: Any) -> None:
     logger.info("Shutdown signal received")
     shutdown_event.set()
+
+
+def _flush_retry_delays() -> Iterator[int]:
+    if not STOP_WRITER_FLUSH_RETRY_BACKOFF_SECONDS:
+        return repeat(0)
+
+    return chain(
+        STOP_WRITER_FLUSH_RETRY_BACKOFF_SECONDS,
+        repeat(STOP_WRITER_FLUSH_RETRY_BACKOFF_SECONDS[-1]),
+    )
+
+
+def _recover_writer(writer: BatchWriter) -> bool:
+    delays = _flush_retry_delays()
+    first_failure = True
+
+    while not shutdown_event.is_set():
+        try:
+            writer.flush()
+            logger.info("Stop writer recovered and flushed pending events")
+            return True
+        except BatchWriteError as e:
+            delay = next(delays)
+            logger.warning("Stop writer degraded: retrying batch flush in %ds", delay)
+            if first_failure:
+                capture_exception(
+                    e,
+                    tags={
+                        "component": "stop_writer",
+                        "failure_scope": "db_flush",
+                        "service_state": "degraded_write",
+                    },
+                )
+                first_failure = False
+            shutdown_event.wait(timeout=delay)
+
+    return False
 
 
 def run_writer() -> None:
@@ -47,15 +87,31 @@ def run_writer() -> None:
 
         try:
             while not shutdown_event.is_set():
-                update = subscriber.get_next()
-                if update:
-                    events = detector.process_update(update)
-                    if events:
-                        writer.add_many(events)
-                else:
-                    writer.flush()
+                try:
+                    update = subscriber.get_next()
+                    if update:
+                        events = detector.process_update(update)
+                        if events:
+                            writer.add_many(events)
+                    else:
+                        writer.flush()
+                except BatchWriteError:
+                    if not _recover_writer(writer):
+                        break
+                except Exception as e:
+                    capture_exception(
+                        e,
+                        tags={
+                            "component": "stop_writer",
+                            "failure_scope": "main_loop",
+                        },
+                    )
+                    raise
         finally:
-            writer.flush()
+            try:
+                writer.flush()
+            except BatchWriteError as e:
+                logger.warning("Stop writer shutdown with unflushed events: %s", e)
             subscriber.close()
 
 

@@ -32,14 +32,21 @@ DB_MAX_OVERFLOW: int = 10
 POLL_INTERVAL_SECONDS: int = 3
 CIRCUIT_BREAKER_FAILURE_THRESHOLD: int = 5
 CIRCUIT_BREAKER_COOLDOWN_SECONDS: int = 60
+RT_FETCH_TIMEOUT_SECONDS: int = 30
+RT_FETCH_RETRY_ATTEMPTS: int = 2
+RT_FETCH_RETRY_BACKOFF_SECONDS: list[int] = [1]
 
 # Stop Writer (batch persistence)
 WRITER_BATCH_SIZE: int = 100
 WRITER_FLUSH_INTERVAL: timedelta = timedelta(seconds=10)
 SUBSCRIBER_TIMEOUT: float = 1.0
+STOP_WRITER_FLUSH_RETRY_BACKOFF_SECONDS: list[int] = [1, 5, 15, 30]
 
 # Importer
 IMPORT_CYCLE_SLEEP: int = 3600  # 1 hour between GTFS static imports
+IMPORT_FETCH_TIMEOUT_SECONDS: int = 60
+IMPORT_FETCH_RETRY_ATTEMPTS: int = 3
+IMPORT_FETCH_RETRY_BACKOFF_SECONDS: list[int] = [5, 15]
 
 # Protobuf parsing
 PB_MIN_PAYLOAD_BYTES: int = 10  # minimum bytes to consider a .pb feed valid
