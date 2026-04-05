@@ -1,5 +1,4 @@
 import logging
-import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -13,6 +12,7 @@ from app.common.constants import (
     WEATHER_FETCH_TIMEOUT_SECONDS,
 )
 from app.common.db.models import WeatherObservation
+from app.common.retry import retry_sync
 
 logger = logging.getLogger(__name__)
 
@@ -44,25 +44,25 @@ def fetch_weather(past_days: int) -> list[WeatherObservation]:
         "past_days": past_days,
         "forecast_days": 0,
     }
-    last_exc: Exception = RuntimeError("no attempts made")
-    for attempt, backoff in enumerate(WEATHER_FETCH_RETRY_BACKOFF_SECONDS, start=1):
-        try:
-            response = requests.get(
-                _OPEN_METEO_URL,
-                params=params,
-                timeout=WEATHER_FETCH_TIMEOUT_SECONDS,
-                headers={"User-Agent": USER_AGENT},
-            )
-            response.raise_for_status()
-            data = response.json()
-            break
-        except Exception as e:
-            last_exc = e
-            if attempt < WEATHER_FETCH_MAX_RETRIES:
-                logger.warning("Open-Meteo fetch failed, retrying in %ds", backoff)
-                time.sleep(backoff)
-    else:
-        raise last_exc
+    response = retry_sync(
+        lambda: requests.get(
+            _OPEN_METEO_URL,
+            params=params,
+            timeout=WEATHER_FETCH_TIMEOUT_SECONDS,
+            headers={"User-Agent": USER_AGENT},
+        ),
+        attempts=WEATHER_FETCH_MAX_RETRIES,
+        backoff_seconds=WEATHER_FETCH_RETRY_BACKOFF_SECONDS,
+        retriable_exceptions=(requests.RequestException,),
+        on_retry=lambda exc, attempt, delay: logger.warning(
+            "Open-Meteo fetch failed on attempt %d: %s. Retrying in %ss",
+            attempt,
+            exc,
+            int(delay),
+        ),
+    )
+    response.raise_for_status()
+    data = response.json()
 
     tz = ZoneInfo(TIMEZONE)
     h = data["hourly"]

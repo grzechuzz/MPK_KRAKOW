@@ -10,6 +10,10 @@ from app.common.models.events import StopEvent
 logger = logging.getLogger(__name__)
 
 
+class BatchWriteError(RuntimeError):
+    """Raised when buffered stop events could not be persisted."""
+
+
 class BatchWriter:
     def __init__(
         self,
@@ -55,8 +59,7 @@ class BatchWriter:
             logger.exception("Failed to write batch: %s", e)
             self._session.rollback()
             self._session.expire_all()
-            self._buffer.clear()
-            return 0
+            raise BatchWriteError("Failed to persist stop event batch") from e
 
     def _should_flush(self) -> bool:
         if len(self._buffer) >= self._batch_size:

@@ -13,7 +13,7 @@ from app.common.feeds import get_all_feed_configs
 from app.common.gtfs.hashing import sha256_file
 from app.common.logging import setup_logging
 from app.common.redis.connection import get_client
-from app.common.sentry import setup_sentry
+from app.common.sentry import capture_exception, setup_sentry
 from app.importer.download import download_gtfs_zip
 from app.importer.load import load_gtfs_zip
 
@@ -66,6 +66,14 @@ def run_import() -> None:
 
         except Exception as e:
             logger.exception("Failed to import %s: %s", agency_name, e)
+            capture_exception(
+                e,
+                tags={
+                    "agency": agency_name,
+                    "component": "importer",
+                    "failure_scope": "feed",
+                },
+            )
 
 
 def main() -> None:
@@ -84,6 +92,13 @@ def main() -> None:
             logger.info("Import cycle completed, sleeping for 1 hour")
         except Exception as e:
             logger.exception("Import cycle failed: %s", e)
+            capture_exception(
+                e,
+                tags={
+                    "component": "importer",
+                    "failure_scope": "cycle",
+                },
+            )
 
         shutdown_event.wait(timeout=IMPORT_CYCLE_SLEEP)
 

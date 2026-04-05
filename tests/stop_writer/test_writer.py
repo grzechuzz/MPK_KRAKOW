@@ -5,7 +5,7 @@ from pytest_mock import MockerFixture
 
 from app.common.models.enums import Agency, DetectionMethod
 from app.common.models.events import StopEvent
-from app.stop_writer.writer import BatchWriter
+from app.stop_writer.writer import BatchWriteError, BatchWriter
 
 
 def _make_event(stop_sequence: int = 1) -> StopEvent:
@@ -90,19 +90,23 @@ def test_flush_rollback_on_error(writer, mock_session):
     mock_session.execute = mocker_side_effect_error(mock_session)
     writer.add_many([_make_event()])
 
-    result = writer.flush()
+    with pytest.raises(BatchWriteError):
+        writer.flush()
 
-    assert result == 0
     mock_session.rollback.assert_called_once()
 
 
-def test_flush_clears_buffer_on_error(writer, mock_session):
+def test_flush_keeps_buffer_on_error(writer, mock_session):
     mock_session.execute = mocker_side_effect_error(mock_session)
     writer.add_many([_make_event()])
 
-    writer.flush()
+    with pytest.raises(BatchWriteError):
+        writer.flush()
 
-    assert writer.flush() == 0
+    original = mock_session.execute
+    original.side_effect = None
+
+    assert writer.flush() == 1
 
 
 def test_expire_all_after_commit(writer, mock_session):
@@ -117,7 +121,8 @@ def test_expire_all_after_rollback(writer, mock_session):
     mock_session.execute = mocker_side_effect_error(mock_session)
     writer.add_many([_make_event()])
 
-    writer.flush()
+    with pytest.raises(BatchWriteError):
+        writer.flush()
 
     mock_session.expire_all.assert_called()
 
