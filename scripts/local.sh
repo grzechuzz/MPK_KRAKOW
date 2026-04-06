@@ -43,11 +43,11 @@ bootstrap() {
 
   create_file_if_missing "$ROOT_DIR/docker/.env" "POSTGRES_DB=mpk_db
 POSTGRES_USER=mpk
-IMPORTER_USER=mpk_importer
-RT_POLLER_USER=mpk_rt_poller
-WRITER_USER=mpk_writer
-API_READER_USER=mpk_api
-WEATHER_COLLECTOR_USER=mpk_weather
+IMPORTER_USER=importer
+RT_POLLER_USER=rt_poller
+WRITER_USER=writer
+API_READER_USER=api_reader
+WEATHER_COLLECTOR_USER=weather_collector
 REDIS_USER=mpk_redis
 SENTRY_DSN=
 SENTRY_ENVIRONMENT=local"
