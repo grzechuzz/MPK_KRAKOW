@@ -39,7 +39,13 @@ Documentation: [api.krktransit.pl/docs](https://api.krktransit.pl/docs)
 
 ## Architecture
 
-The system consists of five services.
+The system consists of five services, each handling a specific stage of the data flow. The services are decoupled, they don't import each other directly and maintain a strict separation of concerns. I would describe the backend, specifically the main flow of fetching, processing and storing data, as an `event-driven data pipeline`.
+
+The project deliberately relies on a shared database architecture, as I believe a full microservices approach would only introduce unnecessary overhead at this scale. To keep things organized, the database is divided into three separate schemas: `gtfs_static`, `events` and `weather`.
+
+<p align="center">
+<img width="569" height="927" alt="image" src="https://github.com/user-attachments/assets/bbd842d9-e373-4322-8252-03a249e0a245" />
+</p>
 
 | Service | Role |
 |---|---|
@@ -74,46 +80,24 @@ Estimated events (`SEQ_JUMP`, `TIMEOUT`) are available optionally via the `?incl
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/grzechuzz/KRK_TRANSIT.git
+ git clone https://github.com/grzechuzz/KRK_TRANSIT.git
+ cd KRK_TRANSIT
 ```
 
 2. Create the required files:
-   
-   - `secrets/db_password` (DB admin)
-   - `secrets/db_password_api` (API read-only)
-   - `secrets/db_password_writer` (RT data writer)
-   - `secrets/db_password_importer` (GTFS data writer)
-   - `secrets/db_password_weather_collector` (weather data writer)
-   - `secrets/redis_password`
-   - `redis/users.acl`
-   
-   Example `redis/users.acl`:
-   ```text
-   user mpk_redis on >CHANGE_THAT_PASSWORD ~* &* +@read +@write +@string +@hash +@set +@list +@pubsub +@keyspace +@connection -@dangerous
-   user default off
-   ```
-
-   Create a `docker/.env` file and fill in the variables:
-   ```env
-   POSTGRES_DB=
-   POSTGRES_USER=
-   IMPORTER_USER=
-   WRITER_USER=
-   API_READER_USER=
-   WEATHER_COLLECTOR_USER=
-   REDIS_USER=
-   ```
+```bash
+./scripts/local.sh bootstrap
+```
    
 3. Start the containers:
 ```bash
-cd docker
-docker compose up -d --build
+./scripts/local.sh up
 ```
 
 4. Open the API documentation:
-```text
-http://localhost:8000/docs
-```
+ ```bash
+ http://localhost:8000/docs
+ ```
 
 ## Tests & Linting
 
