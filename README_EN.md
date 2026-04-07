@@ -102,7 +102,7 @@ Estimated events (`SEQ_JUMP`, `TIMEOUT`) are available optionally via the `?incl
 ## Tests & Linting
 
 ```bash
-pip install -e ".[dev]"
+pip install -e ".[dev,all]"
 
 pytest                  # unit tests
 ruff check .            # linting

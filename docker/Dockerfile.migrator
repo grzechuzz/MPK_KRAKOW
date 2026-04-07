@@ -1,4 +1,4 @@
-FROM python:3.13-slim
+FROM python:3.13-slim AS builder
 
 WORKDIR /app
 
@@ -10,10 +10,18 @@ COPY pyproject.toml /app/pyproject.toml
 COPY app/__init__.py /app/app/__init__.py
 COPY app/platform /app/app/platform
 COPY app/shared /app/app/shared
+RUN pip wheel --no-cache-dir --wheel-dir /wheels ".[migrator]"
+
+FROM python:3.13-slim
+
+WORKDIR /app
+
+COPY --from=builder /wheels /wheels
 COPY alembic.ini /app/alembic.ini
 COPY migrations /app/migrations
 
-RUN pip install --no-cache-dir .
+RUN pip install --no-cache-dir /wheels/* \
+  && rm -rf /wheels
 
 ENV PYTHONUNBUFFERED=1
 

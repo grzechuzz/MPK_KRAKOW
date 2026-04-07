@@ -110,7 +110,7 @@ Zdarzenia estymowane (`SEQ_JUMP`, `TIMEOUT`) są dostępne opcjonalnie przez par
 ## Testy i linter
 
 ```bash
-pip install -e ".[dev]"
+pip install -e ".[dev,all]"
 
 pytest                  # testy jednostkowe
 ruff check .            # linting
