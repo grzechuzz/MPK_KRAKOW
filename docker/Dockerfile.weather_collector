@@ -1,4 +1,4 @@
-FROM python:3.13-slim
+FROM python:3.13-slim AS builder
 
 WORKDIR /app
 
@@ -12,7 +12,16 @@ COPY app/platform /app/app/platform
 COPY app/shared /app/app/shared
 COPY app/weather_collector /app/app/weather_collector
 
-RUN pip install --no-cache-dir .
+RUN pip wheel --no-cache-dir --wheel-dir /wheels ".[weather_collector]"
+
+FROM python:3.13-slim
+
+WORKDIR /app
+
+COPY --from=builder /wheels /wheels
+
+RUN pip install --no-cache-dir /wheels/* \
+  && rm -rf /wheels
 
 ENV PYTHONUNBUFFERED=1
 
